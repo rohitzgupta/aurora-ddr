@@ -53,10 +53,15 @@ def collect(
     for row in wait_summary:
 
         if (
-            row["wait_event_type"]
+            row.get(
+                "wait_event_type"
+            )
             == "Lock"
             and
-            row["session_count"] >= 5
+            row.get(
+                "session_count",
+                0
+            ) >= 5
         ):
 
             findings.append({
@@ -67,12 +72,117 @@ def collect(
                     "Lock Wait Pressure",
 
                 "message":
-                    f"{row['session_count']} "
+                    f"{row.get('session_count', 0)} "
                     f"sessions currently "
                     f"waiting on locks."
             })
 
             critical_count += 1
+
+            break
+
+    #
+    # IO Wait Pressure
+    #
+
+    for row in wait_summary:
+
+        if (
+            row.get(
+                "wait_event_type"
+            )
+            == "IO"
+            and
+            row.get(
+                "session_count",
+                0
+            ) > 0
+        ):
+
+            findings.append({
+
+                "severity": "WARNING",
+
+                "title":
+                    "IO Waits Detected",
+
+                "message":
+                    f"{row.get('session_count', 0)} "
+                    f"non-idle session(s) are "
+                    f"waiting on IO."
+            })
+
+            warning_count += 1
+
+            break
+
+    #
+    # BufferPin Wait Pressure
+    #
+
+    for row in wait_summary:
+
+        if (
+            row.get(
+                "wait_event_type"
+            )
+            == "BufferPin"
+            and
+            row.get(
+                "session_count",
+                0
+            ) > 0
+        ):
+
+            findings.append({
+
+                "severity": "WARNING",
+
+                "title":
+                    "BufferPin Waits Detected",
+
+                "message":
+                    f"{row.get('session_count', 0)} "
+                    f"non-idle session(s) are "
+                    f"waiting on BufferPin events."
+            })
+
+            warning_count += 1
+
+            break
+
+    #
+    # LWLock Wait Pressure
+    #
+
+    for row in wait_summary:
+
+        if (
+            row.get(
+                "wait_event_type"
+            )
+            == "LWLock"
+            and
+            row.get(
+                "session_count",
+                0
+            ) > 0
+        ):
+
+            findings.append({
+
+                "severity": "WARNING",
+
+                "title":
+                    "LWLock Waits Detected",
+
+                "message":
+                    f"{row.get('session_count', 0)} "
+                    f"non-idle session(s) are "
+                    f"waiting on lightweight locks."
+            })
+
+            warning_count += 1
 
             break
 

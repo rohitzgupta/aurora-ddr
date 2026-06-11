@@ -1,12 +1,93 @@
 <section id="waits" class="section">
 
-<h2>Wait Analysis</h2>
+<h2>Wait Event Analysis</h2>
+
+{% if waits.errors %}
+
+<div class="finding">
+
+<span class="badge warning">
+WARNING
+</span>
+
+<strong>
+Wait Event Analysis Incomplete
+</strong>
+
+{% for error in waits.errors %}
+
+<p>
+{{ error }}
+</p>
+
+{% endfor %}
+
+</div>
+
+{% endif %}
+
+<div class="summary-grid">
+
+<div class="summary-card">
+
+<div class="metric">
+{{ waits.summary_metrics.total_sessions_observed }}
+</div>
+
+<div class="label">
+Non-Idle Sessions
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ waits.summary_metrics.waiting_sessions }}
+</div>
+
+<div class="label">
+Waiting Sessions
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ waits.summary_metrics.active_waiting_sessions }}
+</div>
+
+<div class="label">
+Active Waiters
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ waits.summary_metrics.top_wait_session_count }}
+</div>
+
+<div class="label">
+Top Wait Count
+</div>
+
+</div>
+
+</div>
+
+<h3>Wait Class Summary</h3>
 
 <table>
 
 <tr>
 <th>Wait Class</th>
 <th>Sessions</th>
+<th>Waiting</th>
+<th>Active Waiting</th>
+<th>% Sessions</th>
 </tr>
 
 {% for row in waits.summary %}
@@ -14,6 +95,9 @@
 <tr>
 <td>{{ row.wait_event_type }}</td>
 <td>{{ row.session_count }}</td>
+<td>{{ row.waiting_count }}</td>
+<td>{{ row.active_waiting_count }}</td>
+<td>{{ row.pct_sessions }}</td>
 </tr>
 
 {% endfor %}
@@ -28,6 +112,8 @@
 <th>Wait Class</th>
 <th>Wait Event</th>
 <th>Sessions</th>
+<th>Active</th>
+<th>% Sessions</th>
 </tr>
 
 {% for row in waits.details %}
@@ -36,6 +122,58 @@
 <td>{{ row.wait_event_type }}</td>
 <td>{{ row.wait_event }}</td>
 <td>{{ row.session_count }}</td>
+<td>{{ row.active_count }}</td>
+<td>{{ row.pct_sessions }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h3>Active Waiters</h3>
+
+<table>
+
+<tr>
+<th>PID</th>
+<th>User</th>
+<th>Application</th>
+<th>Client</th>
+<th>State</th>
+<th>Wait Class</th>
+<th>Wait Event</th>
+<th>Duration</th>
+<th>Transaction Duration</th>
+<th>SQL</th>
+</tr>
+
+{% for row in waits.active_waiters %}
+
+<tr>
+
+<td>{{ row.pid }}</td>
+<td>{{ row.usename }}</td>
+<td>{{ row.application_name }}</td>
+<td>{{ row.client_addr }}</td>
+<td>{{ row.state }}</td>
+<td>{{ row.wait_event_type }}</td>
+<td>{{ row.wait_event }}</td>
+<td>{{ row.duration }}</td>
+<td>{{ row.transaction_duration }}</td>
+
+<td>
+
+<details>
+<summary>View SQL</summary>
+
+<pre>
+{{ row.query }}
+</pre>
+
+</details>
+
+</td>
+
 </tr>
 
 {% endfor %}

@@ -1,111 +1,251 @@
 from utils.db import execute_query
 
 
+def _empty_result(error=None):
+
+    errors = []
+
+    if error:
+        errors.append(error)
+
+    return {
+
+        "summary":
+            [],
+
+        "details":
+            [],
+
+        "active_waiters":
+            [],
+
+        "summary_metrics":
+            {
+                "total_sessions_observed": 0,
+                "waiting_sessions": 0,
+                "active_waiting_sessions": 0,
+                "top_wait_event_type": None,
+                "top_wait_event": None,
+                "top_wait_session_count": 0
+            },
+
+        "errors":
+            errors
+    }
+
+
 def collect(conn):
     """
     Wait Event Analysis
     """
 
-    wait_event_summary_sql = """
-    SELECT
+    try:
 
-        COALESCE(
+        wait_event_summary_sql = """
+        SELECT
+
+            COALESCE(
+                wait_event_type,
+                'CPU'
+            ) AS wait_event_type,
+
+            COUNT(*) AS session_count,
+
+            COUNT(*) FILTER (
+                WHERE wait_event_type IS NOT NULL
+            ) AS waiting_count,
+
+            COUNT(*) FILTER (
+                WHERE state = 'active'
+                  AND wait_event_type IS NOT NULL
+            ) AS active_waiting_count,
+
+            ROUND(
+                COUNT(*) * 100.0 /
+                NULLIF(
+                    SUM(COUNT(*)) OVER (),
+                    0
+                ),
+                2
+            ) AS pct_sessions
+
+        FROM pg_stat_activity
+
+        WHERE pid <> pg_backend_pid()
+          AND COALESCE(state, '') <> 'idle'
+
+        GROUP BY wait_event_type
+
+        ORDER BY session_count DESC
+        """
+
+        wait_event_detail_sql = """
+        SELECT
+
+            COALESCE(
+                wait_event_type,
+                'CPU'
+            ) AS wait_event_type,
+
+            COALESCE(
+                wait_event,
+                'Running'
+            ) AS wait_event,
+
+            COUNT(*) AS session_count,
+
+            COUNT(*) FILTER (
+                WHERE state = 'active'
+            ) AS active_count,
+
+            ROUND(
+                COUNT(*) * 100.0 /
+                NULLIF(
+                    SUM(COUNT(*)) OVER (),
+                    0
+                ),
+                2
+            ) AS pct_sessions
+
+        FROM pg_stat_activity
+
+        WHERE pid <> pg_backend_pid()
+          AND COALESCE(state, '') <> 'idle'
+
+        GROUP BY
             wait_event_type,
-            'CPU'
-        ) AS wait_event_type,
+            wait_event
 
-        COUNT(*) AS session_count
+        ORDER BY
+            session_count DESC,
+            active_count DESC
 
-    FROM pg_stat_activity
+        LIMIT 25
+        """
 
-    WHERE pid <> pg_backend_pid()
+        active_waiters_sql = """
+        SELECT
 
-    GROUP BY wait_event_type
+            pid,
 
-    ORDER BY session_count DESC
-    """
+            usename,
 
-    wait_event_detail_sql = """
-    SELECT
+            application_name,
 
-        COALESCE(
+            client_addr,
+
+            state,
+
             wait_event_type,
-            'CPU'
-        ) AS wait_event_type,
 
-        COALESCE(
             wait_event,
-            'Running'
-        ) AS wait_event,
 
-        COUNT(*) AS session_count
+            now() - query_start AS duration,
 
-    FROM pg_stat_activity
+            now() - xact_start AS transaction_duration,
 
-    WHERE pid <> pg_backend_pid()
+            LEFT(query,1000) AS query
 
-    GROUP BY
-        wait_event_type,
-        wait_event
+        FROM pg_stat_activity
 
-    ORDER BY session_count DESC
+        WHERE wait_event_type IS NOT NULL
+          AND pid <> pg_backend_pid()
+          AND COALESCE(state, '') <> 'idle'
 
-    LIMIT 25
-    """
+        ORDER BY query_start
 
-    active_waiters_sql = """
-    SELECT
+        LIMIT 50
+        """
 
-        pid,
+        wait_summary = execute_query(
+            conn,
+            wait_event_summary_sql
+        )
 
-        usename,
+        wait_details = execute_query(
+            conn,
+            wait_event_detail_sql
+        )
 
-        application_name,
+        active_waiters = execute_query(
+            conn,
+            active_waiters_sql
+        )
 
-        client_addr,
+        total_sessions_observed = sum(
+            row.get(
+                "session_count",
+                0
+            )
+            for row in wait_summary
+        )
 
-        state,
+        waiting_sessions = sum(
+            row.get(
+                "waiting_count",
+                0
+            )
+            for row in wait_summary
+        )
 
-        wait_event_type,
+        active_waiting_sessions = sum(
+            row.get(
+                "active_waiting_count",
+                0
+            )
+            for row in wait_summary
+        )
 
-        wait_event,
+        top_wait = {}
 
-        now() - query_start AS duration,
+        if wait_details:
+            top_wait = wait_details[0]
 
-        LEFT(query,1000) AS query
+        return {
 
-    FROM pg_stat_activity
+            "summary":
+                wait_summary,
 
-    WHERE wait_event_type IS NOT NULL
+            "details":
+                wait_details,
 
-    ORDER BY query_start
+            "active_waiters":
+                active_waiters,
 
-    LIMIT 50
-    """
+            "summary_metrics":
+                {
+                    "total_sessions_observed":
+                        total_sessions_observed,
 
-    wait_summary = execute_query(
-        conn,
-        wait_event_summary_sql
-    )
+                    "waiting_sessions":
+                        waiting_sessions,
 
-    wait_details = execute_query(
-        conn,
-        wait_event_detail_sql
-    )
+                    "active_waiting_sessions":
+                        active_waiting_sessions,
 
-    active_waiters = execute_query(
-        conn,
-        active_waiters_sql
-    )
+                    "top_wait_event_type":
+                        top_wait.get(
+                            "wait_event_type"
+                        ),
 
-    return {
+                    "top_wait_event":
+                        top_wait.get(
+                            "wait_event"
+                        ),
 
-        "summary":
-            wait_summary,
+                    "top_wait_session_count":
+                        top_wait.get(
+                            "session_count",
+                            0
+                        )
+                },
 
-        "details":
-            wait_details,
+            "errors":
+                []
+        }
 
-        "active_waiters":
-            active_waiters
-    }
+    except Exception as exc:
+
+        return _empty_result(
+            str(exc)
+        )
