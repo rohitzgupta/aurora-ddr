@@ -1,0 +1,85 @@
+<section id="parameters" class="section">
+
+<h2>Configuration Parameters</h2>
+
+<h3>Connections</h3>
+
+<table>
+
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+
+{% for row in parameters.connections %}
+
+<tr>
+<td>{{ row.name }}</td>
+<td>{{ row.setting }} {{ row.unit }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h3>Memory</h3>
+
+<table>
+
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+
+{% for row in parameters.memory %}
+
+<tr>
+<td>{{ row.name }}</td>
+<td>{{ row.setting }} {{ row.unit }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h3>Vacuum</h3>
+
+<table>
+
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+
+{% for row in parameters.vacuum %}
+
+<tr>
+<td>{{ row.name }}</td>
+<td>{{ row.setting }} {{ row.unit }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h3>WAL</h3>
+
+<table>
+
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+
+{% for row in parameters.wal %}
+
+<tr>
+<td>{{ row.name }}</td>
+<td>{{ row.setting }} {{ row.unit }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</section>

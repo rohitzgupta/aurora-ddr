@@ -1,0 +1,214 @@
+body {
+
+    margin: 0;
+
+    font-family:
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: #f4f6f9;
+
+    color: #1f2937;
+}
+
+.container {
+
+    display: flex;
+}
+
+.sidebar {
+
+    width: 250px;
+
+    background: #111827;
+
+    color: white;
+
+    min-height: 100vh;
+
+    position: fixed;
+
+    padding: 20px;
+}
+
+.sidebar h2 {
+
+    margin-top: 0;
+}
+
+.sidebar ul {
+
+    list-style: none;
+
+    padding: 0;
+}
+
+.sidebar li {
+
+    margin-bottom: 12px;
+}
+
+.sidebar a {
+
+    color: white;
+
+    text-decoration: none;
+}
+
+.content {
+
+    margin-left: 280px;
+
+    padding: 30px;
+
+    width: calc(100% - 280px);
+}
+
+.section {
+
+    background: white;
+
+    margin-bottom: 25px;
+
+    padding: 20px;
+
+    border-radius: 8px;
+
+    box-shadow:
+        0 2px 6px
+        rgba(0,0,0,0.08);
+}
+
+.summary-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4,1fr);
+
+    gap: 15px;
+
+    margin-bottom: 20px;
+}
+
+.summary-card {
+
+    background: #f8fafc;
+
+    border-radius: 8px;
+
+    text-align: center;
+
+    padding: 20px;
+}
+
+.metric {
+
+    font-size: 32px;
+
+    font-weight: bold;
+}
+
+.label {
+
+    color: #6b7280;
+}
+
+.finding {
+
+    padding: 15px;
+
+    border-left: 5px solid #ddd;
+
+    margin-bottom: 10px;
+}
+
+.badge {
+
+    color: white;
+
+    padding: 4px 8px;
+
+    border-radius: 4px;
+
+    font-size: 12px;
+
+    margin-right: 10px;
+}
+
+.critical {
+
+    background: #dc2626;
+}
+
+.warning {
+
+    background: #d97706;
+}
+
+.info {
+
+    background: #2563eb;
+}
+
+table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    margin-top: 10px;
+}
+
+th {
+
+    background: #1f2937;
+
+    color: white;
+
+    text-align: left;
+
+    padding: 10px;
+}
+
+td {
+
+    border-bottom: 1px solid #e5e7eb;
+
+    padding: 10px;
+
+    vertical-align: top;
+}
+
+tr:nth-child(even) {
+
+    background: #f9fafb;
+}
+
+pre {
+
+    white-space: pre-wrap;
+
+    word-wrap: break-word;
+
+    max-width: 900px;
+}
+
+details {
+
+    cursor: pointer;
+}
+
+h1 {
+
+    margin-top: 0;
+}
+
+h2 {
+
+    border-bottom:
+        2px solid #e5e7eb;
+
+    padding-bottom: 10px;
+}

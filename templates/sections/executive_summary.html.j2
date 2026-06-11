@@ -1,0 +1,89 @@
+<section id="summary" class="section">
+
+<h2>Executive Summary</h2>
+
+<div class="summary-grid">
+
+<div class="summary-card">
+
+<div class="metric">
+{{ findings.critical_count }}
+</div>
+
+<div class="label">
+Critical
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ findings.warning_count }}
+</div>
+
+<div class="label">
+Warnings
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ findings.info_count }}
+</div>
+
+<div class="label">
+Info
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ db_info.activity.total_sessions }}
+</div>
+
+<div class="label">
+Sessions
+</div>
+
+</div>
+
+</div>
+
+{% for finding in findings.findings %}
+
+<div class="finding">
+
+<span class="badge
+
+{% if finding.severity == 'CRITICAL' %}
+critical
+{% elif finding.severity == 'WARNING' %}
+warning
+{% else %}
+info
+{% endif %}
+
+">
+
+{{ finding.severity }}
+
+</span>
+
+<strong>
+{{ finding.title }}
+</strong>
+
+<p>
+{{ finding.message }}
+</p>
+
+</div>
+
+{% endfor %}
+
+</section>

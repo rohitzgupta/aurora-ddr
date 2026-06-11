@@ -1,0 +1,25 @@
+<section id="blockingtree" class="section">
+
+<h2>Blocking Tree</h2>
+
+<table>
+
+<tr>
+<th>Blocked PID</th>
+<th>Blocking PID(s)</th>
+<th>Duration</th>
+</tr>
+
+{% for row in blocking_tree.tree %}
+
+<tr>
+<td>{{ row.blocked_pid }}</td>
+<td>{{ row.blocking_pids }}</td>
+<td>{{ row.duration }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</section>

@@ -1,0 +1,45 @@
+<section id="waits" class="section">
+
+<h2>Wait Analysis</h2>
+
+<table>
+
+<tr>
+<th>Wait Class</th>
+<th>Sessions</th>
+</tr>
+
+{% for row in waits.summary %}
+
+<tr>
+<td>{{ row.wait_event_type }}</td>
+<td>{{ row.session_count }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h3>Wait Event Details</h3>
+
+<table>
+
+<tr>
+<th>Wait Class</th>
+<th>Wait Event</th>
+<th>Sessions</th>
+</tr>
+
+{% for row in waits.details %}
+
+<tr>
+<td>{{ row.wait_event_type }}</td>
+<td>{{ row.wait_event }}</td>
+<td>{{ row.session_count }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</section>

@@ -1,0 +1,49 @@
+<section id="sql" class="section">
+
+<h2>SQL Analysis</h2>
+
+{% if sqls.enabled %}
+
+<table>
+
+<tr>
+<th>Load %</th>
+<th>Calls</th>
+<th>Avg Latency(ms)</th>
+<th>SQL</th>
+</tr>
+
+{% for row in sqls.top_total_time %}
+
+<tr>
+
+<td>{{ row.pct_total_time }}</td>
+<td>{{ row.calls }}</td>
+<td>{{ row.avg_exec_time_ms }}</td>
+
+<td>
+
+<details>
+<summary>View SQL</summary>
+
+<pre>
+{{ row.query }}
+</pre>
+
+</details>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+{% else %}
+
+<p>pg_stat_statements not installed.</p>
+
+{% endif %}
+
+</section>

@@ -1,0 +1,77 @@
+<section id="storage" class="section">
+
+<h2>Storage Analysis</h2>
+
+<h3>Largest Tables</h3>
+
+<table>
+
+<tr>
+<th>Schema</th>
+<th>Table</th>
+<th>Size</th>
+</tr>
+
+{% for row in storage.largest_tables %}
+
+<tr>
+
+<td>{{ row.schemaname }}</td>
+<td>{{ row.relname }}</td>
+<td>{{ row.table_size }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h3>Largest Indexes</h3>
+
+<table>
+
+<tr>
+<th>Schema</th>
+<th>Index</th>
+<th>Size</th>
+</tr>
+
+{% for row in storage.largest_indexes %}
+
+<tr>
+
+<td>{{ row.schemaname }}</td>
+<td>{{ row.indexrelname }}</td>
+<td>{{ row.index_size }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<h3>Largest Objects</h3>
+
+<table>
+
+<tr>
+<th>Schema</th>
+<th>Object</th>
+<th>Total Size</th>
+</tr>
+
+{% for row in storage.largest_objects %}
+
+<tr>
+
+<td>{{ row.schema_name }}</td>
+<td>{{ row.object_name }}</td>
+<td>{{ row.total_size }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</section>
