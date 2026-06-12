@@ -97,7 +97,12 @@ Top Wait Count
 <td>{{ row.session_count }}</td>
 <td>{{ row.waiting_count }}</td>
 <td>{{ row.active_waiting_count }}</td>
-<td>{{ row.pct_sessions }}</td>
+<td>
+<div class="bar-cell">
+<div class="bar" style="width: {{ row.pct_sessions }}%;"></div>
+<span>{{ row.pct_sessions }}%</span>
+</div>
+</td>
 </tr>
 
 {% endfor %}
@@ -123,7 +128,12 @@ Top Wait Count
 <td>{{ row.wait_event }}</td>
 <td>{{ row.session_count }}</td>
 <td>{{ row.active_count }}</td>
-<td>{{ row.pct_sessions }}</td>
+<td>
+<div class="bar-cell">
+<div class="bar" style="width: {{ row.pct_sessions }}%;"></div>
+<span>{{ row.pct_sessions }}%</span>
+</div>
+</td>
 </tr>
 
 {% endfor %}

@@ -1,0 +1,189 @@
+<section id="io" class="section">
+
+<h2>IO Pressure and Temp Spills</h2>
+
+{% if io.errors %}
+
+<div class="finding">
+
+<span class="badge warning">
+WARNING
+</span>
+
+<strong>
+IO Analysis Incomplete
+</strong>
+
+{% for error in io.errors %}
+
+<p>
+{{ error }}
+</p>
+
+{% endfor %}
+
+</div>
+
+{% endif %}
+
+<div class="summary-grid">
+
+<div class="summary-card">
+
+<div class="metric">
+{{ io.summary.cache_hit_pct }}
+</div>
+
+<div class="label">
+Cache Hit %
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ io.summary.blks_read }}
+</div>
+
+<div class="label">
+Blocks Read
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ io.summary.temp_files }}
+</div>
+
+<div class="label">
+Temp Files
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric metric-small">
+{{ io.summary.temp_bytes_pretty }}
+</div>
+
+<div class="label">
+Temp Written
+</div>
+
+</div>
+
+</div>
+
+<details open>
+
+<summary>
+Table IO Hotspots
+</summary>
+
+<table>
+
+<tr>
+<th>Schema</th>
+<th>Table</th>
+<th>Read Blocks</th>
+<th>Hit %</th>
+</tr>
+
+{% for row in io.table_io %}
+
+<tr>
+<td>{{ row.schemaname }}</td>
+<td>{{ row.relname }}</td>
+<td>{{ row.total_blks_read }}</td>
+<td>{{ row.hit_pct }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+<details>
+
+<summary>
+Index IO Hotspots
+</summary>
+
+<table>
+
+<tr>
+<th>Schema</th>
+<th>Table</th>
+<th>Index</th>
+<th>Read Blocks</th>
+<th>Hit %</th>
+</tr>
+
+{% for row in io.index_io %}
+
+<tr>
+<td>{{ row.schemaname }}</td>
+<td>{{ row.relname }}</td>
+<td>{{ row.indexrelname }}</td>
+<td>{{ row.idx_blks_read }}</td>
+<td>{{ row.hit_pct }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+<details>
+
+<summary>
+Temp-Spill SQL
+</summary>
+
+<table>
+
+<tr>
+<th>Calls</th>
+<th>Temp Read Blocks</th>
+<th>Temp Written Blocks</th>
+<th>Avg Latency(ms)</th>
+<th>SQL</th>
+</tr>
+
+{% for row in io.temp_sql %}
+
+<tr>
+
+<td>{{ row.calls }}</td>
+<td>{{ row.temp_blks_read }}</td>
+<td>{{ row.temp_blks_written }}</td>
+<td>{{ row.avg_exec_time_ms }}</td>
+
+<td>
+
+<details>
+<summary>View SQL</summary>
+
+<pre>
+{{ row.query }}
+</pre>
+
+</details>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+</section>

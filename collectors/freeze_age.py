@@ -16,7 +16,7 @@ def get_status(age_value):
     return "NORMAL"
 
 
-def collect(conn):
+def _collect(conn):
     """
     Frozen Transaction ID Analysis
     """
@@ -124,3 +124,23 @@ def collect(conn):
         "databases":
             database_ages
     }
+
+
+def collect(conn):
+
+    try:
+        return _collect(conn)
+
+    except Exception as exc:
+        return {
+            "summary": {
+                "critical_tables": 0,
+                "warning_tables": 0,
+                "highest_freeze_age": 0
+            },
+            "tables": [],
+            "databases": [],
+            "errors": [
+                str(exc)
+            ]
+        }

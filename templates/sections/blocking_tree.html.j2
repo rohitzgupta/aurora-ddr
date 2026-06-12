@@ -1,6 +1,64 @@
 <section id="blockingtree" class="section">
 
-<h2>Blocking Tree</h2>
+<h2>Blocking Analysis</h2>
+
+<div class="summary-grid">
+
+<div class="summary-card">
+
+<div class="metric">
+{{ locks.summary.blocked_sessions }}
+</div>
+
+<div class="label">
+Blocked Sessions
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ locks.summary.blocking_sessions }}
+</div>
+
+<div class="label">
+Blockers
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ locks.summary.active_locks }}
+</div>
+
+<div class="label">
+Active Locks
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ blocking_tree.blocked_count }}
+</div>
+
+<div class="label">
+Blocking Tree Rows
+</div>
+
+</div>
+
+</div>
+
+<details open>
+
+<summary>
+Blocking Tree
+</summary>
 
 <table>
 
@@ -21,5 +79,81 @@
 {% endfor %}
 
 </table>
+
+</details>
+
+<details>
+
+<summary>
+Blocked Sessions
+</summary>
+
+<table>
+
+<tr>
+<th>Blocked PID</th>
+<th>Blocked User</th>
+<th>Blocker PID</th>
+<th>Wait Duration</th>
+<th>Wait Event</th>
+<th>Blocked SQL</th>
+<th>Blocker SQL</th>
+</tr>
+
+{% for row in locks.waiting_sessions %}
+
+<tr>
+<td>{{ row.blocked_pid }}</td>
+<td>{{ row.blocked_user }}</td>
+<td>{{ row.blocker_pid }}</td>
+<td>{{ row.wait_duration }}</td>
+<td>{{ row.wait_event_type }} / {{ row.wait_event }}</td>
+<td>
+<details>
+<summary>View SQL</summary>
+<pre>{{ row.blocked_query }}</pre>
+</details>
+</td>
+<td>
+<details>
+<summary>View SQL</summary>
+<pre>{{ row.blocker_query }}</pre>
+</details>
+</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+<details>
+
+<summary>
+Lock Mode Summary
+</summary>
+
+<table>
+
+<tr>
+<th>Lock Type</th>
+<th>Mode</th>
+<th>Count</th>
+</tr>
+
+{% for row in locks.lock_summary %}
+
+<tr>
+<td>{{ row.locktype }}</td>
+<td>{{ row.mode }}</td>
+<td>{{ row.count }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
 
 </section>

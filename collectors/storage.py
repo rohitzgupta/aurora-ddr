@@ -6,148 +6,232 @@ def collect(conn):
     Storage Analysis
     """
 
-    #
-    # Largest Tables
-    #
+    try:
 
-    largest_tables_sql = """
-    SELECT
+        #
+        # Largest Tables
+        #
 
-        schemaname,
+        largest_tables_sql = """
+        SELECT
 
-        relname,
+            schemaname,
 
-        pg_size_pretty(
+            relname,
+
+            pg_size_pretty(
+                pg_relation_size(
+                    relid
+                )
+            ) AS table_size,
+
             pg_relation_size(
                 relid
-            )
-        ) AS table_size,
+            ) AS table_size_bytes
 
-        pg_relation_size(
-            relid
-        ) AS table_size_bytes
+        FROM pg_catalog.pg_statio_user_tables
 
-    FROM pg_catalog.pg_statio_user_tables
+        ORDER BY
+            table_size_bytes DESC
 
-    ORDER BY
-        table_size_bytes DESC
+        LIMIT 20
+        """
 
-    LIMIT 20
-    """
+        #
+        # Largest Indexes
+        #
 
-    #
-    # Largest Indexes
-    #
+        largest_indexes_sql = """
+        SELECT
 
-    largest_indexes_sql = """
-    SELECT
+            schemaname,
 
-        schemaname,
+            indexrelname,
 
-        indexrelname,
+            pg_size_pretty(
+                pg_relation_size(
+                    indexrelid
+                )
+            ) AS index_size,
 
-        pg_size_pretty(
             pg_relation_size(
                 indexrelid
-            )
-        ) AS index_size,
+            ) AS index_size_bytes
 
-        pg_relation_size(
-            indexrelid
-        ) AS index_size_bytes
+        FROM pg_stat_user_indexes
 
-    FROM pg_stat_user_indexes
+        ORDER BY
+            index_size_bytes DESC
 
-    ORDER BY
-        index_size_bytes DESC
+        LIMIT 20
+        """
 
-    LIMIT 20
-    """
+        #
+        # Largest Objects
+        #
 
-    #
-    # Largest Objects
-    #
+        largest_objects_sql = """
+        SELECT
 
-    largest_objects_sql = """
-    SELECT
+            n.nspname
+                AS schema_name,
 
-        n.nspname
-            AS schema_name,
+            c.relname
+                AS object_name,
 
-        c.relname
-            AS object_name,
+            pg_size_pretty(
+                pg_total_relation_size(
+                    c.oid
+                )
+            ) AS total_size,
 
-        pg_size_pretty(
             pg_total_relation_size(
                 c.oid
-            )
-        ) AS total_size,
+            ) AS total_size_bytes
 
-        pg_total_relation_size(
-            c.oid
-        ) AS total_size_bytes
+        FROM pg_class c
 
-    FROM pg_class c
+        JOIN pg_namespace n
+            ON n.oid = c.relnamespace
 
-    JOIN pg_namespace n
-        ON n.oid = c.relnamespace
+        WHERE c.relkind = 'r'
 
-    WHERE c.relkind = 'r'
+        ORDER BY
+            total_size_bytes DESC
 
-    ORDER BY
-        total_size_bytes DESC
+        LIMIT 20
+        """
 
-    LIMIT 20
-    """
+        table_activity_sql = """
+        SELECT
 
-    #
-    # Storage Summary
-    #
+            schemaname,
 
-    storage_summary_sql = """
-    SELECT
+            relname,
 
-        COUNT(*)
-            AS total_tables
+            seq_scan,
 
-    FROM pg_class
+            seq_tup_read,
 
-    WHERE relkind = 'r'
-    """
+            idx_scan,
 
-    largest_tables = execute_query(
-        conn,
-        largest_tables_sql
-    )
+            idx_tup_fetch,
 
-    largest_indexes = execute_query(
-        conn,
-        largest_indexes_sql
-    )
+            n_live_tup,
 
-    largest_objects = execute_query(
-        conn,
-        largest_objects_sql
-    )
+            n_dead_tup
 
-    storage_summary = execute_query(
-        conn,
-        storage_summary_sql
-    )
+        FROM pg_stat_user_tables
 
-    return {
+        ORDER BY
+            seq_tup_read DESC
 
-        "summary":
-            storage_summary[0]
-            if storage_summary
-            else {},
+        LIMIT 20
+        """
 
-        "largest_tables":
-            largest_tables,
+        index_usage_sql = """
+        SELECT
 
-        "largest_indexes":
-            largest_indexes,
+            schemaname,
 
-        "largest_objects":
-            largest_objects
-    }
+            relname,
+
+            indexrelname,
+
+            idx_scan,
+
+            idx_tup_read,
+
+            idx_tup_fetch
+
+        FROM pg_stat_user_indexes
+
+        ORDER BY idx_scan DESC
+
+        LIMIT 20
+        """
+
+        #
+        # Storage Summary
+        #
+
+        storage_summary_sql = """
+        SELECT
+
+            COUNT(*)
+                AS total_tables
+
+        FROM pg_class
+
+        WHERE relkind = 'r'
+        """
+
+        largest_tables = execute_query(
+            conn,
+            largest_tables_sql
+        )
+
+        largest_indexes = execute_query(
+            conn,
+            largest_indexes_sql
+        )
+
+        largest_objects = execute_query(
+            conn,
+            largest_objects_sql
+        )
+
+        table_activity = execute_query(
+            conn,
+            table_activity_sql
+        )
+
+        index_usage = execute_query(
+            conn,
+            index_usage_sql
+        )
+
+        storage_summary = execute_query(
+            conn,
+            storage_summary_sql
+        )
+
+        return {
+
+            "summary":
+                storage_summary[0]
+                if storage_summary
+                else {},
+
+            "largest_tables":
+                largest_tables,
+
+            "largest_indexes":
+                largest_indexes,
+
+            "largest_objects":
+                largest_objects,
+
+            "table_activity":
+                table_activity,
+
+            "index_usage":
+                index_usage,
+
+            "errors":
+                []
+        }
+
+    except Exception as exc:
+
+        return {
+            "summary": {},
+            "largest_tables": [],
+            "largest_indexes": [],
+            "largest_objects": [],
+            "table_activity": [],
+            "index_usage": [],
+            "errors": [
+                str(exc)
+            ]
+        }

@@ -1,4 +1,4 @@
-def collect(
+def _collect(
     db_info,
     sessions,
     locks,
@@ -429,3 +429,37 @@ def collect(
         "findings":
             findings
     }
+
+
+def collect(
+    db_info,
+    sessions,
+    locks,
+    sqls,
+    waits,
+    freeze_age
+):
+
+    try:
+        return _collect(
+            db_info,
+            sessions,
+            locks,
+            sqls,
+            waits,
+            freeze_age
+        )
+
+    except Exception as exc:
+        return {
+            "critical_count": 0,
+            "warning_count": 1,
+            "info_count": 0,
+            "findings": [
+                {
+                    "severity": "WARNING",
+                    "title": "Findings Generation Incomplete",
+                    "message": str(exc)
+                }
+            ]
+        }

@@ -1,7 +1,7 @@
 from utils.db import execute_query
 
 
-def collect(conn):
+def _collect(conn):
     """
     Blocking Tree Analysis
     """
@@ -76,3 +76,18 @@ def collect(conn):
         "tree":
             tree
     }
+
+
+def collect(conn):
+
+    try:
+        return _collect(conn)
+
+    except Exception as exc:
+        return {
+            "blocked_count": 0,
+            "tree": [],
+            "errors": [
+                str(exc)
+            ]
+        }

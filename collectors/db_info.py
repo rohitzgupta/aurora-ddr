@@ -1,7 +1,7 @@
 from utils.db import execute_query
 
 
-def collect(conn):
+def _collect(conn):
     """
     Collect database and instance information.
     """
@@ -79,3 +79,21 @@ def collect(conn):
         "activity": activity[0]
             if activity else {}
     }
+
+
+def collect(conn):
+
+    try:
+        return _collect(conn)
+
+    except Exception as exc:
+        return {
+            "database": {},
+            "extensions": [],
+            "settings": [],
+            "database_size": "Unknown",
+            "activity": {},
+            "errors": [
+                str(exc)
+            ]
+        }

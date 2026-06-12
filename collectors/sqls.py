@@ -19,7 +19,7 @@ def _pg_stat_statements_installed(conn):
     return result[0]["installed"]
 
 
-def collect(conn):
+def _collect(conn):
     """
     SQL Performance Analysis
     """
@@ -173,3 +173,21 @@ def collect(conn):
         "top_rows":
             top_rows
     }
+
+
+def collect(conn):
+
+    try:
+        return _collect(conn)
+
+    except Exception as exc:
+        return {
+            "enabled": False,
+            "top_total_time": [],
+            "top_avg_time": [],
+            "top_calls": [],
+            "top_rows": [],
+            "errors": [
+                str(exc)
+            ]
+        }

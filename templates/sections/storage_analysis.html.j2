@@ -2,7 +2,101 @@
 
 <h2>Storage Analysis</h2>
 
-<h3>Largest Tables</h3>
+{% if storage.errors %}
+
+<div class="finding">
+
+<span class="badge warning">
+WARNING
+</span>
+
+<strong>
+Storage Analysis Incomplete
+</strong>
+
+{% for error in storage.errors %}
+
+<p>{{ error }}</p>
+
+{% endfor %}
+
+</div>
+
+{% endif %}
+
+<details open>
+
+<summary>
+Table Scan Hotspots
+</summary>
+
+<table>
+
+<tr>
+<th>Schema</th>
+<th>Table</th>
+<th>Seq Scans</th>
+<th>Seq Tuples Read</th>
+<th>Index Scans</th>
+<th>Dead Tuples</th>
+</tr>
+
+{% for row in storage.table_activity %}
+
+<tr>
+<td>{{ row.schemaname }}</td>
+<td>{{ row.relname }}</td>
+<td>{{ row.seq_scan }}</td>
+<td>{{ row.seq_tup_read }}</td>
+<td>{{ row.idx_scan }}</td>
+<td>{{ row.n_dead_tup }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+<details>
+
+<summary>
+Index Usage Hotspots
+</summary>
+
+<table>
+
+<tr>
+<th>Schema</th>
+<th>Table</th>
+<th>Index</th>
+<th>Scans</th>
+<th>Tuples Read</th>
+<th>Tuples Fetched</th>
+</tr>
+
+{% for row in storage.index_usage %}
+
+<tr>
+<td>{{ row.schemaname }}</td>
+<td>{{ row.relname }}</td>
+<td>{{ row.indexrelname }}</td>
+<td>{{ row.idx_scan }}</td>
+<td>{{ row.idx_tup_read }}</td>
+<td>{{ row.idx_tup_fetch }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+<details>
+
+<summary>
+Largest Tables
+</summary>
 
 <table>
 
@@ -26,7 +120,13 @@
 
 </table>
 
-<h3>Largest Indexes</h3>
+</details>
+
+<details>
+
+<summary>
+Largest Indexes
+</summary>
 
 <table>
 
@@ -50,7 +150,13 @@
 
 </table>
 
-<h3>Largest Objects</h3>
+</details>
+
+<details>
+
+<summary>
+Largest Objects
+</summary>
 
 <table>
 
@@ -73,5 +179,7 @@
 {% endfor %}
 
 </table>
+
+</details>
 
 </section>

@@ -4,6 +4,16 @@
 
 {% if sqls.enabled %}
 
+<p class="section-note">
+Current pg_stat_statements totals identify SQL most likely to contribute to load. Without snapshots, these are cumulative since the last statistics reset.
+</p>
+
+<details open>
+
+<summary>
+Top SQL by Total Time
+</summary>
+
 <table>
 
 <tr>
@@ -40,9 +50,99 @@
 
 </table>
 
+</details>
+
+<details>
+
+<summary>
+Top SQL by Average Latency
+</summary>
+
+<table>
+
+<tr>
+<th>Calls</th>
+<th>Total Time(ms)</th>
+<th>Avg Latency(ms)</th>
+<th>Rows</th>
+<th>SQL</th>
+</tr>
+
+{% for row in sqls.top_avg_time %}
+
+<tr>
+<td>{{ row.calls }}</td>
+<td>{{ row.total_exec_time_ms }}</td>
+<td>{{ row.avg_exec_time_ms }}</td>
+<td>{{ row.rows }}</td>
+<td>
+<details>
+<summary>View SQL</summary>
+<pre>{{ row.query }}</pre>
+</details>
+</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+<details>
+
+<summary>
+Top SQL by Calls
+</summary>
+
+<table>
+
+<tr>
+<th>Calls</th>
+<th>Total Time(ms)</th>
+<th>Avg Latency(ms)</th>
+<th>Rows</th>
+<th>SQL</th>
+</tr>
+
+{% for row in sqls.top_calls %}
+
+<tr>
+<td>{{ row.calls }}</td>
+<td>{{ row.total_exec_time_ms }}</td>
+<td>{{ row.avg_exec_time_ms }}</td>
+<td>{{ row.rows }}</td>
+<td>
+<details>
+<summary>View SQL</summary>
+<pre>{{ row.query }}</pre>
+</details>
+</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
 {% else %}
 
-<p>pg_stat_statements not installed.</p>
+<div class="finding">
+
+<span class="badge warning">
+WARNING
+</span>
+
+<strong>
+pg_stat_statements not installed
+</strong>
+
+<p>
+Top SQL analysis is unavailable, which limits root-cause analysis for slowdowns.
+</p>
+
+</div>
 
 {% endif %}
 

@@ -1,6 +1,64 @@
 <section id="sessions" class="section">
 
-<h2>Session Analysis</h2>
+<h2>Connection Pressure</h2>
+
+<div class="summary-grid">
+
+<div class="summary-card">
+
+<div class="metric">
+{{ sessions.summary.total_sessions }}
+</div>
+
+<div class="label">
+Total Sessions
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ sessions.summary.active_sessions }}
+</div>
+
+<div class="label">
+Active
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ sessions.summary.idle_in_transaction }}
+</div>
+
+<div class="label">
+Idle In Txn
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ sessions.long_running_transactions | length }}
+</div>
+
+<div class="label">
+Long Txns
+</div>
+
+</div>
+
+</div>
+
+<details open>
+
+<summary>
+Session State Breakdown
+</summary>
 
 <table>
 
@@ -19,5 +77,76 @@
 </tr>
 
 </table>
+
+</details>
+
+<details>
+
+<summary>
+Application Session Sources
+</summary>
+
+<table>
+
+<tr>
+<th>Application</th>
+<th>Sessions</th>
+</tr>
+
+{% for row in sessions.applications %}
+
+<tr>
+<td>{{ row.application_name }}</td>
+<td>{{ row.count }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+<details>
+
+<summary>
+Long-Running Transactions
+</summary>
+
+<table>
+
+<tr>
+<th>PID</th>
+<th>User</th>
+<th>Application</th>
+<th>State</th>
+<th>Wait Class</th>
+<th>Wait Event</th>
+<th>Duration</th>
+<th>SQL</th>
+</tr>
+
+{% for row in sessions.long_running_transactions %}
+
+<tr>
+<td>{{ row.pid }}</td>
+<td>{{ row.usename }}</td>
+<td>{{ row.application_name }}</td>
+<td>{{ row.state }}</td>
+<td>{{ row.wait_event_type }}</td>
+<td>{{ row.wait_event }}</td>
+<td>{{ row.duration }}</td>
+<td>
+<details>
+<summary>View SQL</summary>
+<pre>{{ row.query }}</pre>
+</details>
+</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
 
 </section>

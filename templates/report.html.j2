@@ -6,7 +6,7 @@
 <meta charset="utf-8">
 
 <title>
-Aurora PostgreSQL Diagnostic Report
+Aurora PostgreSQL Health Assessment
 </title>
 
 <link rel="stylesheet" href="styles.css">
@@ -22,17 +22,21 @@ Aurora PostgreSQL Diagnostic Report
 <div class="content">
 
 <h1>
-Aurora PostgreSQL Diagnostic Report
+Aurora PostgreSQL Health Assessment
 </h1>
 
 <p>
 
 Generated:
-{{ db_info.database.report_time_cst }} CST
+{{ db_info.database.current_time }}
 
 </p>
 
 {% include 'sections/executive_summary.html.j2' %}
+
+{% include 'sections/risk_assessment.html.j2' %}
+
+{% include 'sections/recommendations.html.j2' %}
 
 {% include 'sections/waits.html.j2' %}
 
@@ -41,6 +45,8 @@ Generated:
 {% include 'sections/sessions.html.j2' %}
 
 {% include 'sections/sql_analysis.html.j2' %}
+
+{% include 'sections/io_pressure.html.j2' %}
 
 {% include 'sections/vacuum_analysis.html.j2' %}
 

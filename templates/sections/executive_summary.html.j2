@@ -2,6 +2,42 @@
 
 <h2>Executive Summary</h2>
 
+<div class="hero-assessment {{ assessment.status_class }}">
+
+<div>
+
+<div class="score-label">
+Point-in-Time Health Score
+</div>
+
+<div class="score">
+{{ assessment.score }}
+</div>
+
+<div class="score-status">
+{{ assessment.status }}
+</div>
+
+</div>
+
+<div class="assessment-copy">
+
+<p>
+This report uses current PostgreSQL and Aurora-visible statistics only.
+It is designed to identify the most likely root causes of current slowdown symptoms.
+</p>
+
+<p>
+Top wait:
+<strong>
+{{ assessment.top_wait_event_type }} / {{ assessment.top_wait_event }}
+</strong>
+</p>
+
+</div>
+
+</div>
+
 <div class="summary-grid">
 
 <div class="summary-card">
@@ -43,18 +79,46 @@ Info
 <div class="summary-card">
 
 <div class="metric">
+{{ assessment.risks | length }}
+</div>
+
+<div class="label">
+Top Risks
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ waits.summary_metrics.waiting_sessions }}
+</div>
+
+<div class="label">
+Waiting
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
 {{ db_info.activity.total_sessions }}
 </div>
 
 <div class="label">
-Sessions
+Total Sessions
 </div>
 
 </div>
 
 </div>
+
+<h3>Top Findings</h3>
 
 {% for finding in findings.findings %}
+
+{% if loop.index <= 5 %}
 
 <div class="finding">
 
@@ -83,6 +147,8 @@ info
 </p>
 
 </div>
+
+{% endif %}
 
 {% endfor %}
 

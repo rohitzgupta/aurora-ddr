@@ -2,6 +2,52 @@
 
 <h2>Frozen Transaction ID Analysis</h2>
 
+<div class="summary-grid">
+
+<div class="summary-card">
+
+<div class="metric">
+{{ freeze_age.summary.critical_tables }}
+</div>
+
+<div class="label">
+Critical Tables
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ freeze_age.summary.warning_tables }}
+</div>
+
+<div class="label">
+Warning Tables
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ freeze_age.summary.highest_freeze_age }}
+</div>
+
+<div class="label">
+Highest Freeze Age
+</div>
+
+</div>
+
+</div>
+
+<details open>
+
+<summary>
+Freeze Age Summary
+</summary>
+
 <table>
 
 <tr>
@@ -17,5 +63,51 @@
 </tr>
 
 </table>
+
+</details>
+
+<details>
+
+<summary>
+Tables Closest to Freeze Risk
+</summary>
+
+<table>
+
+<tr>
+<th>Status</th>
+<th>Schema</th>
+<th>Table</th>
+<th>Freeze Age</th>
+<th>Total Size</th>
+</tr>
+
+{% for row in freeze_age.tables %}
+
+<tr>
+<td>
+<span class="badge
+{% if row.status == 'CRITICAL' %}
+critical
+{% elif row.status == 'WARNING' %}
+warning
+{% else %}
+info
+{% endif %}
+">
+{{ row.status }}
+</span>
+</td>
+<td>{{ row.schema_name }}</td>
+<td>{{ row.table_name }}</td>
+<td>{{ row.freeze_age }}</td>
+<td>{{ row.total_size }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
 
 </section>

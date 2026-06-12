@@ -1,0 +1,61 @@
+<section id="risks" class="section">
+
+<h2>Top Risks</h2>
+
+<p class="section-note">
+Ranked point-in-time risks most likely to explain current or recent slowdown symptoms.
+</p>
+
+<div class="risk-list">
+
+{% for risk in assessment.risks %}
+
+<div class="risk-card severity-{{ risk.severity | lower }}">
+
+<div class="risk-header">
+
+<span class="badge
+{% if risk.severity == 'CRITICAL' %}
+critical
+{% elif risk.severity == 'WARNING' %}
+warning
+{% else %}
+info
+{% endif %}
+">
+{{ risk.severity }}
+</span>
+
+<strong>
+{{ risk.title }}
+</strong>
+
+</div>
+
+<p>
+<strong>Evidence:</strong>
+{{ risk.evidence }}
+</p>
+
+<p>
+<strong>Impact:</strong>
+{{ risk.impact }}
+</p>
+
+<p>
+<strong>Action:</strong>
+{{ risk.action }}
+</p>
+
+<p class="owner">
+Owner:
+{{ risk.owner }}
+</p>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</section>

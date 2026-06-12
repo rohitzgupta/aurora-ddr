@@ -20,12 +20,14 @@ from collectors import vacuum
 from collectors import freeze_age
 from collectors import storage
 from collectors import parameters
+from collectors import io
+from collectors import assessment
 
 
 def parse_args():
 
     parser = argparse.ArgumentParser(
-        description="Aurora PostgreSQL Diagnostic Report"
+        description="Aurora PostgreSQL Health Assessment"
     )
 
     parser.add_argument(
@@ -201,6 +203,14 @@ def main():
         )
 
         print(
+            "Collecting IO pressure analysis..."
+        )
+
+        io_data = (
+            io.collect(conn)
+        )
+
+        print(
              "Collecting parameter analysis..."
         )
 
@@ -220,6 +230,25 @@ def main():
                 sqls_data,
                 waits_data,
                 freeze_age_data
+            )
+        )
+
+        print(
+            "Generating health assessment..."
+        )
+
+        assessment_data = (
+            assessment.collect(
+                db_info_data,
+                sessions_data,
+                locks_data,
+                sqls_data,
+                waits_data,
+                blocking_tree_data,
+                vacuum_data,
+                freeze_age_data,
+                storage_data,
+                io_data
             )
         )
 
@@ -252,11 +281,17 @@ def main():
             "storage":
                 storage_data,
 
+            "io":
+                io_data,
+
             "parameters":
                 parameters_data,
 
             "findings":
-                findings_data
+                findings_data,
+
+            "assessment":
+                assessment_data
         }
 
         print(

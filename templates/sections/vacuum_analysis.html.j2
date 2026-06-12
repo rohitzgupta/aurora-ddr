@@ -2,6 +2,64 @@
 
 <h2>Vacuum Analysis</h2>
 
+<div class="summary-grid">
+
+<div class="summary-card">
+
+<div class="metric">
+{{ vacuum.summary.tables_with_high_dead_tuples }}
+</div>
+
+<div class="label">
+High Dead Tuple Tables
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ vacuum.summary.highest_dead_tuple_count }}
+</div>
+
+<div class="label">
+Highest Dead Tuples
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ vacuum.active_vacuum | length }}
+</div>
+
+<div class="label">
+Active Vacuum
+</div>
+
+</div>
+
+<div class="summary-card">
+
+<div class="metric">
+{{ vacuum.tables_requiring_analyze | length }}
+</div>
+
+<div class="label">
+Analyze Candidates
+</div>
+
+</div>
+
+</div>
+
+<details open>
+
+<summary>
+Vacuum Risk Summary
+</summary>
+
 <table>
 
 <tr>
@@ -15,5 +73,75 @@
 </tr>
 
 </table>
+
+</details>
+
+<details>
+
+<summary>
+Tables With Dead Tuple Pressure
+</summary>
+
+<table>
+
+<tr>
+<th>Schema</th>
+<th>Table</th>
+<th>Live Tuples</th>
+<th>Dead Tuples</th>
+<th>Dead %</th>
+<th>Last Vacuum</th>
+<th>Last Autovacuum</th>
+</tr>
+
+{% for row in vacuum.tables_requiring_vacuum %}
+
+<tr>
+<td>{{ row.schemaname }}</td>
+<td>{{ row.relname }}</td>
+<td>{{ row.n_live_tup }}</td>
+<td>{{ row.n_dead_tup }}</td>
+<td>{{ row.dead_tuple_pct }}</td>
+<td>{{ row.last_vacuum }}</td>
+<td>{{ row.last_autovacuum }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+<details>
+
+<summary>
+Tables Requiring Analyze
+</summary>
+
+<table>
+
+<tr>
+<th>Schema</th>
+<th>Table</th>
+<th>Modified Since Analyze</th>
+<th>Last Analyze</th>
+<th>Last Autoanalyze</th>
+</tr>
+
+{% for row in vacuum.tables_requiring_analyze %}
+
+<tr>
+<td>{{ row.schemaname }}</td>
+<td>{{ row.relname }}</td>
+<td>{{ row.n_mod_since_analyze }}</td>
+<td>{{ row.last_analyze }}</td>
+<td>{{ row.last_autoanalyze }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
 
 </section>

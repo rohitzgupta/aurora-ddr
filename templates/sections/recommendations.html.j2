@@ -1,0 +1,62 @@
+<section id="recommendations" class="section">
+
+<h2>DBA Recommendations</h2>
+
+<table>
+
+<tr>
+<th>Priority</th>
+<th>Recommendation</th>
+<th>Action</th>
+<th>Owner</th>
+</tr>
+
+{% for item in assessment.recommendations %}
+
+<tr>
+
+<td>
+<span class="pill">
+{{ item.priority }}
+</span>
+</td>
+
+<td>
+{{ item.title }}
+</td>
+
+<td>
+{{ item.action }}
+</td>
+
+<td>
+{{ item.owner }}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<details class="collapsed-note">
+
+<summary>
+Assessment Limitations
+</summary>
+
+<ul>
+
+{% for item in assessment.limitations %}
+
+<li>
+{{ item }}
+</li>
+
+{% endfor %}
+
+</ul>
+
+</details>
+
+</section>

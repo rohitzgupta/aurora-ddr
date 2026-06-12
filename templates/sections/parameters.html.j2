@@ -2,7 +2,15 @@
 
 <h2>Configuration Parameters</h2>
 
-<h3>Connections</h3>
+<p class="section-note">
+Configuration values that can influence connection pressure, memory spills, vacuum lag, WAL pressure, and parallel query behavior.
+</p>
+
+<details open>
+
+<summary>
+Connections
+</summary>
 
 <table>
 
@@ -22,7 +30,13 @@
 
 </table>
 
-<h3>Memory</h3>
+</details>
+
+<details open>
+
+<summary>
+Memory
+</summary>
 
 <table>
 
@@ -42,7 +56,13 @@
 
 </table>
 
-<h3>Vacuum</h3>
+</details>
+
+<details>
+
+<summary>
+Vacuum
+</summary>
 
 <table>
 
@@ -62,7 +82,13 @@
 
 </table>
 
-<h3>WAL</h3>
+</details>
+
+<details>
+
+<summary>
+WAL
+</summary>
 
 <table>
 
@@ -81,5 +107,59 @@
 {% endfor %}
 
 </table>
+
+</details>
+
+<details>
+
+<summary>
+Logging
+</summary>
+
+<table>
+
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+
+{% for row in parameters.logging %}
+
+<tr>
+<td>{{ row.name }}</td>
+<td>{{ row.setting }} {{ row.unit }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
+
+<details>
+
+<summary>
+Parallel Query
+</summary>
+
+<table>
+
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+
+{% for row in parameters.parallel %}
+
+<tr>
+<td>{{ row.name }}</td>
+<td>{{ row.setting }} {{ row.unit }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</details>
 
 </section>

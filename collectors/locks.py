@@ -1,7 +1,7 @@
 from utils.db import execute_query
 
 
-def collect(conn):
+def _collect(conn):
     """
     Lock and blocking analysis.
     """
@@ -183,3 +183,24 @@ def collect(conn):
         "lock_summary":
             lock_summary
     }
+
+
+def collect(conn):
+
+    try:
+        return _collect(conn)
+
+    except Exception as exc:
+        return {
+            "summary": {
+                "blocked_sessions": 0,
+                "blocking_sessions": 0,
+                "active_locks": 0
+            },
+            "waiting_sessions": [],
+            "blocking_sessions": [],
+            "lock_summary": [],
+            "errors": [
+                str(exc)
+            ]
+        }

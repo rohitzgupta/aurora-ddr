@@ -1,7 +1,7 @@
 from utils.db import execute_query
 
 
-def collect(conn):
+def _collect(conn):
     """
     Vacuum Analysis
     """
@@ -207,3 +207,21 @@ def collect(conn):
         "autovacuum_settings":
             autovacuum_settings
     }
+
+
+def collect(conn):
+
+    try:
+        return _collect(conn)
+
+    except Exception as exc:
+        return {
+            "summary": {},
+            "active_vacuum": [],
+            "tables_requiring_vacuum": [],
+            "tables_requiring_analyze": [],
+            "autovacuum_settings": [],
+            "errors": [
+                str(exc)
+            ]
+        }

@@ -4,7 +4,7 @@ from utils.db import execute_query
 LONG_TXN_THRESHOLD_MINUTES = 5
 
 
-def collect(conn):
+def _collect(conn):
     """
     Session and transaction analysis.
     """
@@ -157,3 +157,22 @@ def collect(conn):
         "long_running_transactions":
             long_running_transactions
     }
+
+
+def collect(conn):
+
+    try:
+        return _collect(conn)
+
+    except Exception as exc:
+        return {
+            "summary": {},
+            "state_breakdown": [],
+            "applications": [],
+            "hosts": [],
+            "active_sessions": [],
+            "long_running_transactions": [],
+            "errors": [
+                str(exc)
+            ]
+        }

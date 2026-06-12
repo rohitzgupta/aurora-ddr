@@ -1,7 +1,7 @@
 from utils.db import execute_query
 
 
-def collect(conn):
+def _collect(conn):
     """
     Important PostgreSQL Configuration Parameters
     """
@@ -137,3 +137,22 @@ def collect(conn):
         "parallel":
             parallel
     }
+
+
+def collect(conn):
+
+    try:
+        return _collect(conn)
+
+    except Exception as exc:
+        return {
+            "connections": [],
+            "memory": [],
+            "vacuum": [],
+            "wal": [],
+            "logging": [],
+            "parallel": [],
+            "errors": [
+                str(exc)
+            ]
+        }
