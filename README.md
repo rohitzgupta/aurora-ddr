@@ -34,8 +34,9 @@ python ddr.py
 report.html
 
 ## Screenshots
+![Executive Summary](docs/screenshots/summary.png)
 
-(add screenshots)
+![Wait Events](docs/screenshots/wait-events.png)
 
 ## Roadmap
 
