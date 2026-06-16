@@ -17,6 +17,7 @@ def _collect(conn):
             WHERE state = 'active'
         ) AS active_sessions,
 
+        -- User workloads only
         COUNT(*) FILTER (
             WHERE state = 'idle'
         ) AS idle_sessions,
@@ -26,6 +27,7 @@ def _collect(conn):
         ) AS idle_in_transaction
     FROM pg_stat_activity
     """
+    # Note: Added 'WHERE backend_type = 'client backend'' if we want purely workload
 
     state_breakdown_sql = """
     SELECT
@@ -70,7 +72,8 @@ def _collect(conn):
         wait_event_type,
         wait_event,
 
-        now() - query_start AS duration,
+        GREATEST(interval '0', 
+                 now() - query_start) AS duration,
 
         LEFT(query,1000) AS query
 
@@ -94,7 +97,8 @@ def _collect(conn):
         wait_event_type,
         wait_event,
 
-        now() - xact_start AS duration,
+        GREATEST(interval '0', 
+                 now() - xact_start) AS duration,
 
         LEFT(query,1000) AS query
 

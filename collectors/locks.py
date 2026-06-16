@@ -17,7 +17,8 @@ def _collect(conn):
         blocker.usename AS blocker_user,
         blocker.application_name AS blocker_application,
 
-        now() - blocked.query_start AS wait_duration,
+        GREATEST(interval '0', 
+                 now() - blocked.query_start) AS wait_duration,
 
         blocked.wait_event_type,
         blocked.wait_event,
@@ -145,8 +146,8 @@ def _collect(conn):
 
             state,
 
-            now() - xact_start
-                AS transaction_duration,
+            GREATEST(interval '0', 
+                     now() - xact_start) AS transaction_duration,
 
             wait_event_type,
             wait_event,

@@ -34,6 +34,20 @@ def _collect(conn):
             "top_rows": []
         }
 
+    # Exclusion filters for DDR and Metadata queries
+    sql_exclusion_clause = """
+    AND query NOT LIKE '%Aurora DDR%'
+    AND query NOT LIKE '%pg_stat_%'
+    AND query NOT LIKE '%pg_settings%'
+    AND query NOT LIKE '%pg_catalog%'
+    AND query NOT LIKE '%information_schema%'
+    AND query NOT LIKE '%current_database()%'
+    AND query NOT LIKE '%current_user%'
+    AND query NOT LIKE '%pg_size_pretty%'
+    AND query NOT LIKE '%pg_relation_size%'
+    AND query NOT LIKE '%pg_total_relation_size%'
+    """
+
     top_total_time_sql = """
     SELECT
 
@@ -63,6 +77,7 @@ def _collect(conn):
     FROM pg_stat_statements
 
     WHERE calls > 0
+    {sql_exclusion_clause}
 
     ORDER BY total_exec_time DESC
 

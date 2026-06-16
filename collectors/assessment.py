@@ -68,6 +68,7 @@ def collect(
         risks = []
         recommendations = []
         score = 100
+        deductions = []
 
         session_summary = sessions.get(
             "summary",
@@ -96,6 +97,7 @@ def collect(
 
         if blocked_sessions > 0:
             score -= 25
+            deductions.append("-25: Active blocking sessions detected")
             risks.append(_risk(
                 "CRITICAL",
                 "Blocking Sessions Are Present",
@@ -125,6 +127,7 @@ def collect(
 
         if wait_counts.get("Lock", 0) > 0:
             score -= 15
+            deductions.append("-15: High count of sessions waiting on locks")
             risks.append(_risk(
                 "CRITICAL",
                 "Lock Waits Are Slowing Work",
@@ -133,9 +136,16 @@ def collect(
                 "Use Blocking Analysis to find the blocker and review application transaction boundaries.",
                 "DBA / App Team"
             ))
+            recommendations.append(_recommendation(
+                "Now",
+                "Investigate Lock Contention",
+                "Identify blocking PIDs and check for long-held row or table locks.",
+                "DBA"
+            ))
 
         if wait_counts.get("IO", 0) > 0:
             score -= 10
+            deductions.append("-10: Non-idle sessions waiting on IO")
             risks.append(_risk(
                 "WARNING",
                 "IO Waits Detected",
@@ -144,9 +154,16 @@ def collect(
                 "Review IO Pressure and top SQL for high read, write, or temp activity.",
                 "DBA / Infra"
             ))
+            recommendations.append(_recommendation(
+                "Today",
+                "Perform IO Investigation",
+                "Check for disk saturation or high-IO SQL queries.",
+                "DBA"
+            ))
 
         if wait_counts.get("BufferPin", 0) > 0:
             score -= 10
+            deductions.append("-10: BufferPin contention detected")
             risks.append(_risk(
                 "WARNING",
                 "BufferPin Waits Detected",
@@ -158,6 +175,7 @@ def collect(
 
         if wait_counts.get("LWLock", 0) > 0:
             score -= 10
+            deductions.append("-10: Internal LWLock contention detected")
             risks.append(_risk(
                 "WARNING",
                 "LWLock Contention Detected",
@@ -176,6 +194,7 @@ def collect(
 
         if long_txn_count > 0:
             score -= 10
+            deductions.append("-10: Transactions running > 5 minutes")
             risks.append(_risk(
                 "WARNING",
                 "Long-Running Transactions",
@@ -192,12 +211,19 @@ def collect(
 
         if idle_in_txn >= 5:
             score -= 10
+            deductions.append("-10: Excessive Idle-in-Transaction sessions")
             risks.append(_risk(
                 "WARNING",
                 "Idle-In-Transaction Pressure",
                 f"{idle_in_txn} session(s) idle in transaction",
                 "Open transactions can block vacuum and retain locks.",
                 "Inspect application connection handling and transaction lifecycle.",
+                "App Team"
+            ))
+            recommendations.append(_recommendation(
+                "Today",
+                "Optimize App Connection Lifecycle",
+                "Ensure application correctly closes transactions and doesn't hold them open while idle.",
                 "App Team"
             ))
 
@@ -221,6 +247,7 @@ def collect(
 
         if total_sessions > 0 and active_ratio >= 80:
             score -= 10
+            deductions.append("-10: Connection pool saturation risk (>80% active)")
             risks.append(_risk(
                 "WARNING",
                 "High Active Session Ratio",
@@ -247,6 +274,7 @@ def collect(
 
         if freeze_critical > 0:
             score -= 25
+            deductions.append("-25: Tables at critical TXID freeze risk")
             risks.append(_risk(
                 "CRITICAL",
                 "Transaction ID Freeze Risk",
@@ -255,15 +283,28 @@ def collect(
                 "Prioritize vacuum/freeze remediation for critical tables.",
                 "DBA"
             ))
+            recommendations.append(_recommendation(
+                "Urgent",
+                "Manual Vacuum Freeze",
+                "Run VACUUM FREEZE on critical tables to prevent TXID wraparound.",
+                "DBA"
+            ))
 
         elif freeze_warning > 0:
             score -= 10
+            deductions.append("-10: Tables above freeze warning threshold")
             risks.append(_risk(
                 "WARNING",
                 "Elevated Freeze Age",
                 f"{freeze_warning} table(s) above warning threshold",
                 "Autovacuum may be falling behind on transaction ID cleanup.",
                 "Review freeze-age tables and autovacuum configuration.",
+                "DBA"
+            ))
+            recommendations.append(_recommendation(
+                "Scheduled",
+                "Tune Autovacuum",
+                "Review autovacuum settings and freeze-related parameters.",
                 "DBA"
             ))
 
@@ -279,12 +320,19 @@ def collect(
 
         if high_dead > 0:
             score -= 10
+            deductions.append("-10: Tables with high dead tuple counts")
             risks.append(_risk(
                 "WARNING",
                 "Dead Tuple Buildup",
                 f"{high_dead} table(s) with high dead tuples",
                 "Bloat and stale visibility can increase IO and query latency.",
                 "Review vacuum candidates and autovacuum settings.",
+                "DBA"
+            ))
+            recommendations.append(_recommendation(
+                "Today",
+                "Address Table Bloat",
+                "Investigate why autovacuum is not keeping up with updates/deletes.",
                 "DBA"
             ))
 
@@ -300,6 +348,7 @@ def collect(
 
         if temp_bytes > 0:
             score -= 5
+            deductions.append("-5: Significant temporary file activity")
             risks.append(_risk(
                 "INFO",
                 "Temporary File Activity Present",
@@ -310,6 +359,12 @@ def collect(
                 "Sorts, hashes, or large joins may be spilling to temporary files.",
                 "Review temp-heavy SQL and memory settings such as work_mem.",
                 "DBA / App Team"
+            ))
+            recommendations.append(_recommendation(
+                "Today",
+                "Tune work_mem or SQL",
+                "Increase work_mem for specific sessions or optimize heavy sort/join queries.",
+                "DBA"
             ))
 
         if not sqls.get(
@@ -366,6 +421,8 @@ def collect(
             "score": score,
             "status": status,
             "status_class": status_class,
+            "deductions": deductions,
+            "background_processes": waits.get("background_summary", []),
             "active_ratio": active_ratio,
             "top_wait_event_type": wait_metrics.get(
                 "top_wait_event_type"
@@ -389,6 +446,8 @@ def collect(
             "score": 0,
             "status": "Assessment Incomplete",
             "status_class": "status-critical",
+            "deductions": [],
+            "background_processes": [],
             "active_ratio": 0,
             "top_wait_event_type": None,
             "top_wait_event": None,

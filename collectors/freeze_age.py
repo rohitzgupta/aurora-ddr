@@ -22,7 +22,7 @@ def _collect(conn):
     """
 
     freeze_age_sql = """
-    SELECT
+    SELECT -- Aurora DDR (User Tables Only)
 
         n.nspname
             AS schema_name,
@@ -45,6 +45,39 @@ def _collect(conn):
         ON n.oid = c.relnamespace
 
     WHERE c.relkind = 'r'
+      AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+
+    ORDER BY
+        age(c.relfrozenxid) DESC
+
+    LIMIT 50
+    """
+
+    system_freeze_age_sql = """
+    SELECT -- Aurora DDR (System Objects)
+
+        n.nspname
+            AS schema_name,
+
+        c.relname
+            AS table_name,
+
+        age(c.relfrozenxid)
+            AS freeze_age,
+
+        pg_size_pretty(
+            pg_total_relation_size(
+                c.oid
+            )
+        ) AS total_size
+
+    FROM pg_class c
+
+    JOIN pg_namespace n
+        ON n.oid = c.relnamespace
+
+    WHERE c.relkind = 'r'
+      AND n.nspname IN ('pg_catalog', 'information_schema')
 
     ORDER BY
         age(c.relfrozenxid) DESC
@@ -69,6 +102,11 @@ def _collect(conn):
     rows = execute_query(
         conn,
         freeze_age_sql
+    )
+
+    system_rows = execute_query(
+        conn,
+        system_freeze_age_sql
     )
 
     database_ages = execute_query(
@@ -121,6 +159,9 @@ def _collect(conn):
         "tables":
             rows,
 
+        "system_tables":
+            system_rows,
+
         "databases":
             database_ages
     }
@@ -139,6 +180,7 @@ def collect(conn):
                 "highest_freeze_age": 0
             },
             "tables": [],
+            "system_tables": [],
             "databases": [],
             "errors": [
                 str(exc)

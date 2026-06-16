@@ -27,27 +27,27 @@ def collect(conn):
         summary_sql = """
         SELECT
 
-            blks_read,
+            COALESCE(blks_read, 0) AS blks_read,
 
-            blks_hit,
+            COALESCE(blks_hit, 0) AS blks_hit,
 
             ROUND(
-                blks_hit * 100.0 /
+                COALESCE(blks_hit, 0) * 100.0 /
                 NULLIF(
-                    blks_hit + blks_read,
+                    COALESCE(blks_hit, 0) + COALESCE(blks_read, 0),
                     0
                 ),
                 2
             ) AS cache_hit_pct,
 
-            temp_files,
+            COALESCE(temp_files, 0) AS temp_files,
 
-            temp_bytes,
+            COALESCE(temp_bytes, 0) AS temp_bytes,
 
-            pg_size_pretty(temp_bytes)
+            pg_size_pretty(COALESCE(temp_bytes, 0))
                 AS temp_bytes_pretty,
 
-            deadlocks
+            COALESCE(deadlocks, 0) AS deadlocks
 
         FROM pg_stat_database
 

@@ -13,6 +13,9 @@ def _empty_result(error=None):
         "summary":
             [],
 
+        "background_summary":
+            [],
+
         "details":
             [],
 
@@ -42,7 +45,7 @@ def collect(conn):
     try:
 
         wait_event_summary_sql = """
-        SELECT
+        SELECT -- Aurora DDR
 
             COALESCE(
                 wait_event_type,
@@ -71,11 +74,40 @@ def collect(conn):
 
         FROM pg_stat_activity
 
-        WHERE pid <> pg_backend_pid()
+        WHERE backend_type = 'client backend'
+          AND pid <> pg_backend_pid()
           AND COALESCE(state, '') <> 'idle'
 
         GROUP BY wait_event_type
 
+        ORDER BY session_count DESC
+        """
+
+        background_wait_summary_sql = """
+        SELECT -- Aurora DDR
+
+            backend_type,
+
+            COALESCE(
+                wait_event_type,
+                'CPU'
+            ) AS wait_event_type,
+
+            COALESCE(
+                wait_event,
+                'Running'
+            ) AS wait_event,
+
+            COUNT(*) AS session_count
+
+        FROM pg_stat_activity
+
+        WHERE backend_type <> 'client backend'
+
+        GROUP BY 
+            backend_type, 
+            wait_event_type, 
+            wait_event
         ORDER BY session_count DESC
         """
 
@@ -109,7 +141,8 @@ def collect(conn):
 
         FROM pg_stat_activity
 
-        WHERE pid <> pg_backend_pid()
+        WHERE backend_type = 'client backend'
+          AND pid <> pg_backend_pid()
           AND COALESCE(state, '') <> 'idle'
 
         GROUP BY
@@ -140,9 +173,11 @@ def collect(conn):
 
             wait_event,
 
-            now() - query_start AS duration,
+            GREATEST(interval '0', 
+                     now() - query_start) AS duration,
 
-            now() - xact_start AS transaction_duration,
+            GREATEST(interval '0', 
+                     now() - xact_start) AS transaction_duration,
 
             LEFT(query,1000) AS query
 
@@ -160,6 +195,11 @@ def collect(conn):
         wait_summary = execute_query(
             conn,
             wait_event_summary_sql
+        )
+
+        background_summary = execute_query(
+            conn,
+            background_wait_summary_sql
         )
 
         wait_details = execute_query(
@@ -205,6 +245,9 @@ def collect(conn):
 
             "summary":
                 wait_summary,
+
+            "background_summary":
+                background_summary,
 
             "details":
                 wait_details,
