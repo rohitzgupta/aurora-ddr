@@ -186,21 +186,6 @@ def main():
             io_data
         )
 
-        assessment_data = (
-            assessment.collect(
-                db_info_data,
-                sessions_data,
-                locks_data,
-                sqls_data,
-                waits_data,
-                blocking_tree_data,
-                vacuum_data,
-                freeze_age_data,
-                storage_data,
-                io_data
-            )
-        )
-
         report_context = {
 
             "db_info":

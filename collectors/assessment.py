@@ -115,10 +115,14 @@ def _generate_root_causes(score, deductions, wait_counts, session_summary, io_su
             "investigation": "Perform emergency manual VACUUM FREEZE on critical tables."
         })
 
-    # Sort by confidence/severity and return top 3
-    sorted_causes = sorted(causes, key=lambda x: (x['confidence'] == 'Critical', x['confidence'] == 'High', x['confidence'] == 'Medium'), reverse=True)
+    # Sort by weight/confidence
+    confidence_map = {"Critical": 4, "High": 3, "Medium": 2, "N/A": 1}
+    sorted_causes = sorted(causes, key=lambda x: confidence_map.get(x['confidence'], 0), reverse=True)
     
-    if not sorted_causes:
+    if not sorted_causes and score < 100:
+        # Fallback if score is low but no specific root cause triggered above
+        pass
+    elif not sorted_causes:
         sorted_causes.append({
             "contributor": "Healthy Workload",
             "confidence": "N/A",
@@ -215,7 +219,12 @@ def collect(
         vacuum_summary = vacuum.get("summary", {})
         
         # Logic for Why the score was assigned
-        score_explanation = f"The score of {score} is based on " + ( "detected performance bottlenecks and resource pressure." if score < 95 else "the database operating within healthy parameters.")
+        if score == 100:
+            score_explanation = "The database is operating within healthy parameters with no significant issues detected."
+        elif score >= 90:
+            score_explanation = "The database is generally healthy, with minor observations that do not currently impact availability."
+        else:
+            score_explanation = f"The score of {score} reflects detected performance bottlenecks or resource pressures that require attention."
 
         blocked_sessions = lock_summary.get(
             "blocked_sessions",
@@ -533,7 +542,7 @@ def collect(
             ))
 
         # Probable Root Cause Assessment
-        root_causes = _generate_root_causes(
+        root_causes_data = _generate_root_causes(
             score, 
             deductions, 
             wait_counts, 
@@ -560,8 +569,10 @@ def collect(
             "status": status,
             "status_class": status_class,
             "score_explanation": score_explanation,
-            "root_causes": root_causes,
+            "root_causes": root_causes_data,
             "deductions": deductions,
+            "connection_utilization": conn_util,
+            "connection_status": session_summary.get("utilization_status", "Healthy"),
             "background_processes": waits.get("background_summary", []),
             "active_ratio": active_ratio,
             "top_wait_event_type": wait_metrics.get(
@@ -571,7 +582,9 @@ def collect(
                 "top_wait_event"
             ),
             "risks": risks[:8],
+            "top_risks": risks[:3],
             "recommendations": recommendations[:8],
+            "primary_recommendation": recommendations[0] if recommendations else None,
             "limitations": [
                 "Point-in-time assessment only",
                 "No historical baseline or AWR-style snapshots",

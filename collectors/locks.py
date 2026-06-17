@@ -112,17 +112,14 @@ def _collect(conn):
         active_lock_count_sql
     )
 
-    blocker_pids = set()
-
-    for row in waiting_sessions:
-        blocker_pids.add(
-            row["blocker_pid"]
-        )
+    # Build a consistent map of who is waiting and who is blocking
+    blocker_pids = {row["blocker_pid"] for row in waiting_sessions}
+    blocked_pids = {row["blocked_pid"] for row in waiting_sessions}
 
     summary = {
 
         "blocked_sessions":
-            len(waiting_sessions),
+            len(blocked_pids),
 
         "blocking_sessions":
             len(blocker_pids),

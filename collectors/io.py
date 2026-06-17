@@ -61,27 +61,27 @@ def collect(conn):
 
             relname,
 
-            heap_blks_read,
+            COALESCE(heap_blks_read, 0) AS heap_blks_read,
 
-            heap_blks_hit,
+            COALESCE(heap_blks_hit, 0) AS heap_blks_hit,
 
-            idx_blks_read,
+            COALESCE(idx_blks_read, 0) AS idx_blks_read,
 
-            idx_blks_hit,
+            COALESCE(idx_blks_hit, 0) AS idx_blks_hit,
 
-            toast_blks_read,
+            COALESCE(toast_blks_read, 0) AS toast_blks_read,
 
-            toast_blks_hit,
+            COALESCE(toast_blks_hit, 0) AS toast_blks_hit,
 
-            tidx_blks_read,
+            COALESCE(tidx_blks_read, 0) AS tidx_blks_read,
 
-            tidx_blks_hit,
+            COALESCE(tidx_blks_hit, 0) AS tidx_blks_hit,
 
             (
-                heap_blks_read +
-                idx_blks_read +
-                toast_blks_read +
-                tidx_blks_read
+                COALESCE(heap_blks_read, 0) +
+                COALESCE(idx_blks_read, 0) +
+                COALESCE(toast_blks_read, 0) +
+                COALESCE(tidx_blks_read, 0)
             ) AS total_blks_read,
 
             ROUND(
@@ -121,14 +121,14 @@ def collect(conn):
 
             indexrelname,
 
-            idx_blks_read,
+            COALESCE(idx_blks_read, 0) AS idx_blks_read,
 
-            idx_blks_hit,
+            COALESCE(idx_blks_hit, 0) AS idx_blks_hit,
 
             ROUND(
-                idx_blks_hit * 100.0 /
+                COALESCE(idx_blks_hit, 0) * 100.0 /
                 NULLIF(
-                    idx_blks_hit + idx_blks_read,
+                    COALESCE(idx_blks_hit, 0) + COALESCE(idx_blks_read, 0),
                     0
                 ),
                 2

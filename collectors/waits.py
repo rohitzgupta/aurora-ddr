@@ -182,6 +182,7 @@ def collect(conn):
         FROM pg_stat_activity
 
         WHERE wait_event_type IS NOT NULL
+          AND backend_type = 'client backend'
           AND pid <> pg_backend_pid()
           AND COALESCE(state, '') <> 'idle'
 
