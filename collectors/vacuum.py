@@ -62,10 +62,14 @@ def _collect(conn):
         schemaname,
 
         relname,
+        
+        pg_total_relation_size(relid) AS size_bytes,
+        
+        pg_size_pretty(pg_total_relation_size(relid)) AS table_size,
 
-        n_live_tup,
+        COALESCE(n_live_tup, 0) AS n_live_tup,
 
-        n_dead_tup,
+        COALESCE(n_dead_tup, 0) AS n_dead_tup,
 
         ROUND(
             LEAST(100.0,
@@ -182,16 +186,31 @@ def _collect(conn):
 
     # Add severity to vacuum tables
     for table in tables_requiring_vacuum:
-        pct = table.get("dead_tuple_pct", 0) or 0
+        pct = float(table.get("dead_tuple_pct", 0) or 0)
+        dead_tuples = int(table.get("n_dead_tup", 0) or 0)
+        size_bytes = int(table.get("size_bytes", 0) or 0)
+        
+        # Severity Badges for Dead Tuple %
         if pct > 20:
-            table["severity"] = "Red"
+            table["severity_badge"] = "Red"
             table["status_class"] = "status-critical"
         elif pct > 10:
-            table["severity"] = "Yellow"
+            table["severity_badge"] = "Yellow"
             table["status_class"] = "status-watch"
         else:
-            table["severity"] = "Green"
+            table["severity_badge"] = "Green"
             table["status_class"] = "status-healthy"
+            
+        # Risk Level Logic (Operational Impact)
+        # Prioritize large tables with bloat or extremely high percentage bloat
+        if (size_bytes > 1024*1024*1024 and pct > 5) or pct > 50 or dead_tuples > 1000000:
+            table["risk_level"] = "Critical"
+        elif (size_bytes > 100*1024*1024 and pct > 10) or pct > 20:
+            table["risk_level"] = "High"
+        elif pct > 10 or dead_tuples > 50000:
+            table["risk_level"] = "Warning"
+        else:
+            table["risk_level"] = "Low"
 
     return {
 

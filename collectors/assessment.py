@@ -125,14 +125,11 @@ def _generate_root_causes(score, deductions, wait_counts, session_summary, io_su
             "investigation": "Perform emergency manual VACUUM FREEZE on critical tables."
         })
 
-    # Sort by weight/confidence
-    confidence_map = {"Critical": 4, "High": 3, "Medium": 2, "N/A": 1}
-    sorted_causes = sorted(causes, key=lambda x: confidence_map.get(x['confidence'], 0), reverse=True)
+    # Sort by weight/confidence and prioritize high-impact contributors
+    confidence_map = {"Critical": 4, "High": 3, "Medium": 2, "Low": 1, "N/A": 0}
+    sorted_causes = sorted(causes, key=lambda x: (confidence_map.get(x['confidence'], 0), x['contributor']), reverse=True)
     
-    if not sorted_causes and score < 100:
-        # Fallback if score is low but no specific root cause triggered above
-        pass
-    elif not sorted_causes:
+    if not sorted_causes:
         sorted_causes.append({
             "contributor": "Healthy Workload",
             "confidence": "N/A",
@@ -212,12 +209,12 @@ def collect(
         
         if conn_util > 90:
             score -= 20
-            deductions.append("-20: Critical Connection Pressure")
+            deductions.append("-20: Critical Connection Utilization")
             session_summary["utilization_status"] = "High"
             risks.append(_risk("CRITICAL", "Connection Saturation", f"{conn_util}% utilized", "Database may reject new connections.", "Increase max_connections or use a connection pooler.", "DBA"))
         elif conn_util > 70:
             score -= 10
-            deductions.append("-10: High Connection Count")
+            deductions.append("-10: High Connection Utilization")
             session_summary["utilization_status"] = "Watch"
             risks.append(_risk("WARNING", "High Connection Count", f"{conn_util}% utilized", "Approaching connection limits.", "Review connection pooling and idle session timeouts.", "DBA"))
         else:
@@ -243,7 +240,7 @@ def collect(
 
         if blocked_sessions > 0:
             score -= 25
-            deductions.append("-25: Active Blocking")
+            deductions.append("-25: Critical Table Blocking")
             risks.append(_risk(
                 "CRITICAL",
                 "Blocking Sessions Are Present",
@@ -273,7 +270,7 @@ def collect(
 
         if wait_counts.get("Lock", 0) > 0:
             score -= 15
-            deductions.append("-15: Lock Wait Contention")
+            deductions.append("-15: Lock Contention")
             risks.append(_risk(
                 "CRITICAL",
                 "Lock Waits Are Slowing Work",
@@ -291,7 +288,7 @@ def collect(
 
         if wait_counts.get("IO", 0) > 0:
             score -= 10
-            deductions.append("-10: Storage IO Pressure")
+            deductions.append("-10: IO Wait Pressure")
             risks.append(_risk(
                 "WARNING",
                 "IO Waits Detected",
@@ -321,7 +318,7 @@ def collect(
 
         if wait_counts.get("LWLock", 0) > 0:
             score -= 10
-            deductions.append("-10: Internal LWLock Contention")
+            deductions.append("-10: Internal Concurrency (LWLock)")
             risks.append(_risk(
                 "WARNING",
                 "LWLock Contention Detected",
@@ -357,7 +354,7 @@ def collect(
 
         if idle_in_txn >= 5:
             score -= 10
-            deductions.append("-10: Idle In Transactions")
+            deductions.append("-10: Excessive Idle-in-Transaction")
             risks.append(_risk(
                 "WARNING",
                 "Idle-In-Transaction Pressure",
@@ -494,7 +491,7 @@ def collect(
 
         if temp_bytes > 0:
             score -= 5
-            deductions.append("-5: Temporary File Spills")
+            deductions.append("-5: Local Storage (Temp) Spills")
             risks.append(_risk(
                 "INFO",
                 "Temporary File Activity Present",
