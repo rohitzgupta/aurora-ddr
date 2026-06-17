@@ -112,17 +112,17 @@ def _collect(conn):
         active_lock_count_sql
     )
 
-    # Build a consistent map of who is waiting and who is blocking
-    blocker_pids = {row["blocker_pid"] for row in waiting_sessions}
-    blocked_pids = {row["blocked_pid"] for row in waiting_sessions}
+    # Deduplicate based on actual waiting sessions identified in the join
+    unique_waiting_pids = {row["blocked_pid"] for row in waiting_sessions}
+    unique_blocking_pids = {row["blocker_pid"] for row in waiting_sessions}
 
     summary = {
 
         "blocked_sessions":
-            len(blocked_pids),
+            len(unique_waiting_pids),
 
         "blocking_sessions":
-            len(blocker_pids),
+            len(unique_blocking_pids),
 
         "active_locks":
             active_lock_count[0]["active_locks"]
@@ -131,7 +131,7 @@ def _collect(conn):
 
     blocking_sessions = []
 
-    for blocker_pid in blocker_pids:
+    for blocker_pid in unique_blocking_pids:
 
         sql = f"""
         SELECT

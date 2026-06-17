@@ -145,14 +145,12 @@ def _collect(conn):
     vacuum_summary_sql = """
     SELECT
 
-        COUNT(*) FILTER
+        COALESCE(COUNT(*) FILTER
         (
-            WHERE n_dead_tup > 1000000
-        )
-        AS tables_with_high_dead_tuples,
+            WHERE (n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0)) > 0.2
+        ), 0) AS tables_with_high_dead_tuples,
 
-        MAX(n_dead_tup)
-        AS highest_dead_tuple_count
+        COALESCE(MAX(n_dead_tup), 0) AS highest_dead_tuple_count
 
     FROM pg_stat_user_tables
     """

@@ -76,12 +76,15 @@ def _collect(conn):
 
         name = row["name"]
         
-        # Logic to avoid duplication: if the raw setting already looks like it has units
-        # or if units are absent, just show the raw setting.
         raw = str(row["raw_setting"])
-        unit = row["unit"]
+        unit = row["unit"] if row["unit"] else ""
         
-        row["setting"] = f"{raw} {unit}" if unit and unit not in raw else raw
+        # Handle duplication (e.g., '8192 8kB' from pg_settings where unit is '8kB')
+        # and prevent 'None' or empty unit appending.
+        if not unit or unit.lower() in raw.lower():
+            row["setting"] = raw
+        else:
+            row["setting"] = f"{raw} {unit}"
 
         if name in (
             "max_connections",

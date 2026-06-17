@@ -41,7 +41,7 @@ def _generate_root_causes(score, deductions, wait_counts, session_summary, io_su
     if util > 70:
         causes.append({
             "contributor": "Connection Pressure",
-            "confidence": "High" if util > 90 else "Medium",
+            "confidence": "High" if util > 90 else "Medium" if util > 70 else "Low",
             "evidence": f"{util}% of max_connections utilized ({session_summary.get('total_sessions')} sessions).",
             "investigation": "Check application connection pool settings and scale or optimize session lifecycle."
         })
@@ -51,7 +51,7 @@ def _generate_root_causes(score, deductions, wait_counts, session_summary, io_su
     if lock_waiters > 0:
         causes.append({
             "contributor": "Lock Contention",
-            "confidence": "High" if lock_waiters > 5 else "Medium",
+            "confidence": "High" if lock_waiters > 5 else "Medium" if lock_waiters > 0 else "Low",
             "evidence": f"{lock_waiters} session(s) blocked on heavy-weight locks.",
             "investigation": "Review the Blocking Tree to identify the root blocker and the SQL holding locks."
         })
@@ -61,7 +61,7 @@ def _generate_root_causes(score, deductions, wait_counts, session_summary, io_su
     if io_waiters > 0:
         causes.append({
             "contributor": "IO Saturation",
-            "confidence": "Medium",
+            "confidence": "Medium" if io_waiters > 2 else "Low",
             "evidence": f"{io_waiters} session(s) waiting on storage reads/writes.",
             "investigation": "Identify high-IO SQL queries and check Aurora storage latency metrics."
         })
@@ -71,7 +71,7 @@ def _generate_root_causes(score, deductions, wait_counts, session_summary, io_su
     if lw_waiters > 0:
         causes.append({
             "contributor": "LWLock Contention",
-            "confidence": "Medium",
+            "confidence": "Medium" if lw_waiters > 2 else "Low",
             "evidence": f"{lw_waiters} session(s) waiting on internal light-weight locks.",
             "investigation": "Check for high concurrency on specific pages or WAL write pressure."
         })
@@ -86,13 +86,23 @@ def _generate_root_causes(score, deductions, wait_counts, session_summary, io_su
             "investigation": "Audit application code for missing commits/rollbacks and connection handling."
         })
 
+    # Blocking (Top priority if exists)
+    blocked = deductions.count("-25: Active blocking sessions detected")
+    if blocked > 0:
+        causes.append({
+            "contributor": "Heavy Blocking",
+            "confidence": "High",
+            "evidence": "Active blocking chain detected in pg_locks.",
+            "investigation": "Use the Blocking Tree to find the root blocker and terminate if necessary."
+        })
+
     # Temp Spills
-    temp_bytes = io_summary.get("temp_bytes", 0)
+    temp_bytes = io_summary.get("temp_bytes", 0) or 0
     if temp_bytes > 1024 * 1024 * 512: # > 512MB
         causes.append({
             "contributor": "Temporary File Spills",
             "confidence": "High",
-            "evidence": io_summary.get("temp_bytes_pretty", "High temp usage"),
+            "evidence": io_summary.get("temp_bytes_pretty") or "High temp usage",
             "investigation": "Review Top SQL for large sorts/joins and consider increasing work_mem."
         })
 
@@ -110,7 +120,7 @@ def _generate_root_causes(score, deductions, wait_counts, session_summary, io_su
     if freeze_summary.get("critical_tables", 0) > 0:
         causes.append({
             "contributor": "TXID Freeze Risk",
-            "confidence": "Critical",
+            "confidence": "High",
             "evidence": f"{freeze_summary.get('critical_tables')} tables approaching wraparound.",
             "investigation": "Perform emergency manual VACUUM FREEZE on critical tables."
         })
@@ -194,20 +204,20 @@ def collect(
         )
 
         # Connection Utilization Calculation
-        max_conns = int(db_info.get("settings_dict", {}).get("max_connections", 0))
-        total_sessions = session_summary.get("total_sessions", 0)
+        max_conns = int(db_info.get("settings_dict", {}).get("max_connections") or 0)
+        total_sessions = session_summary.get("total_sessions") or 0
         conn_util = round((total_sessions / max_conns * 100), 2) if max_conns > 0 else 0
         session_summary["utilization"] = conn_util
         session_summary["max_connections"] = max_conns
         
         if conn_util > 90:
             score -= 20
-            deductions.append("-20: Critical connection utilization (>90%)")
+            deductions.append("-20: Critical Connection Pressure")
             session_summary["utilization_status"] = "High"
             risks.append(_risk("CRITICAL", "Connection Saturation", f"{conn_util}% utilized", "Database may reject new connections.", "Increase max_connections or use a connection pooler.", "DBA"))
         elif conn_util > 70:
             score -= 10
-            deductions.append("-10: High connection utilization (>70%)")
+            deductions.append("-10: High Connection Count")
             session_summary["utilization_status"] = "Watch"
             risks.append(_risk("WARNING", "High Connection Count", f"{conn_util}% utilized", "Approaching connection limits.", "Review connection pooling and idle session timeouts.", "DBA"))
         else:
@@ -233,7 +243,7 @@ def collect(
 
         if blocked_sessions > 0:
             score -= 25
-            deductions.append("-25: Active blocking sessions detected")
+            deductions.append("-25: Active Blocking")
             risks.append(_risk(
                 "CRITICAL",
                 "Blocking Sessions Are Present",
@@ -263,7 +273,7 @@ def collect(
 
         if wait_counts.get("Lock", 0) > 0:
             score -= 15
-            deductions.append("-15: High count of sessions waiting on locks")
+            deductions.append("-15: Lock Wait Contention")
             risks.append(_risk(
                 "CRITICAL",
                 "Lock Waits Are Slowing Work",
@@ -281,7 +291,7 @@ def collect(
 
         if wait_counts.get("IO", 0) > 0:
             score -= 10
-            deductions.append("-10: Non-idle sessions waiting on IO")
+            deductions.append("-10: Storage IO Pressure")
             risks.append(_risk(
                 "WARNING",
                 "IO Waits Detected",
@@ -299,7 +309,7 @@ def collect(
 
         if wait_counts.get("BufferPin", 0) > 0:
             score -= 10
-            deductions.append("-10: BufferPin contention detected")
+            deductions.append("-10: BufferPin Contention")
             risks.append(_risk(
                 "WARNING",
                 "BufferPin Waits Detected",
@@ -311,7 +321,7 @@ def collect(
 
         if wait_counts.get("LWLock", 0) > 0:
             score -= 10
-            deductions.append("-10: Internal LWLock contention detected")
+            deductions.append("-10: Internal LWLock Contention")
             risks.append(_risk(
                 "WARNING",
                 "LWLock Contention Detected",
@@ -330,7 +340,7 @@ def collect(
 
         if long_txn_count > 0:
             score -= 10
-            deductions.append("-10: Transactions running > 5 minutes")
+            deductions.append("-10: Long Transactions")
             risks.append(_risk(
                 "WARNING",
                 "Long-Running Transactions",
@@ -347,7 +357,7 @@ def collect(
 
         if idle_in_txn >= 5:
             score -= 10
-            deductions.append("-10: Excessive Idle-in-Transaction sessions")
+            deductions.append("-10: Idle In Transactions")
             risks.append(_risk(
                 "WARNING",
                 "Idle-In-Transaction Pressure",
@@ -383,7 +393,7 @@ def collect(
 
         if total_sessions > 0 and active_ratio >= 80:
             score -= 10
-            deductions.append("-10: Connection pool saturation risk (>80% active)")
+            deductions.append("-10: Active Session Saturation")
             risks.append(_risk(
                 "WARNING",
                 "High Active Session Ratio",
@@ -410,7 +420,7 @@ def collect(
 
         if freeze_critical > 0:
             score -= 25
-            deductions.append("-25: Tables at critical TXID freeze risk")
+            deductions.append("-25: Critical TXID Freeze Risk")
             risks.append(_risk(
                 "CRITICAL",
                 "Transaction ID Freeze Risk",
@@ -428,7 +438,7 @@ def collect(
 
         elif freeze_warning > 0:
             score -= 10
-            deductions.append("-10: Tables above freeze warning threshold")
+            deductions.append("-10: Elevated Freeze Age")
             risks.append(_risk(
                 "WARNING",
                 "Elevated Freeze Age",
@@ -456,7 +466,7 @@ def collect(
 
         if high_dead > 0:
             score -= 10
-            deductions.append("-10: Tables with high dead tuple counts")
+            deductions.append("-10: Dead Tuple Buildup")
             risks.append(_risk(
                 "WARNING",
                 "Dead Tuple Buildup",
@@ -484,7 +494,7 @@ def collect(
 
         if temp_bytes > 0:
             score -= 5
-            deductions.append("-5: Significant temporary file activity")
+            deductions.append("-5: Temporary File Spills")
             risks.append(_risk(
                 "INFO",
                 "Temporary File Activity Present",
