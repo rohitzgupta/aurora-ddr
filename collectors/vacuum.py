@@ -182,18 +182,18 @@ def _collect(conn):
         vacuum_summary_sql
     )
 
-        # Add severity to vacuum tables
-        for table in tables_requiring_vacuum:
-            pct = table.get("dead_tuple_pct", 0) or 0
-            if pct > 20:
-                table["severity"] = "Red"
-                table["status_class"] = "status-critical"
-            elif pct > 10:
-                table["severity"] = "Yellow"
-                table["status_class"] = "status-watch"
-            else:
-                table["severity"] = "Green"
-                table["status_class"] = "status-healthy"
+    # Add severity to vacuum tables
+    for table in tables_requiring_vacuum:
+        pct = table.get("dead_tuple_pct", 0) or 0
+        if pct > 20:
+            table["severity"] = "Red"
+            table["status_class"] = "status-critical"
+        elif pct > 10:
+            table["severity"] = "Yellow"
+            table["status_class"] = "status-watch"
+        else:
+            table["severity"] = "Green"
+            table["status_class"] = "status-healthy"
 
     return {
 
