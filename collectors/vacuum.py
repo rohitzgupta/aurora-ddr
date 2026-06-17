@@ -78,9 +78,9 @@ def _collect(conn):
             2
         ) AS dead_tuple_pct,
 
-        last_vacuum,
+        COALESCE(last_vacuum::text, 'N/A') AS last_vacuum,
 
-        last_autovacuum
+        COALESCE(last_autovacuum::text, 'N/A') AS last_autovacuum
 
     FROM pg_stat_user_tables
 
@@ -103,9 +103,9 @@ def _collect(conn):
 
         n_mod_since_analyze,
 
-        last_analyze,
+        COALESCE(last_analyze::text, 'N/A') AS last_analyze,
 
-        last_autoanalyze
+        COALESCE(last_autoanalyze::text, 'N/A') AS last_autoanalyze
 
     FROM pg_stat_user_tables
 
@@ -202,16 +202,34 @@ def _collect(conn):
             table["status_class"] = "status-healthy"
             
         # Risk Level Logic (Operational Impact)
-        # Prioritize large tables with bloat or extremely high percentage bloat
+        reasons = []
+        if size_bytes > 1024*1024*1024 and pct > 5:
+            reasons.append("Large table (>1GB) with significant bloat")
+        if pct > 50:
+            reasons.append("Extreme bloat (>50%)")
+        if dead_tuples > 1000000:
+            reasons.append("Very high dead tuple count (>1M)")
+
         if (size_bytes > 1024*1024*1024 and pct > 5) or pct > 50 or dead_tuples > 1000000:
             table["risk_level"] = "Critical"
         elif (size_bytes > 100*1024*1024 and pct > 10) or pct > 20:
             table["risk_level"] = "High"
+            if size_bytes > 100*1024*1024 and pct > 10: reasons.append("Medium table (>100MB) with bloat")
+            if pct > 20: reasons.append("High bloat (>20%)")
         elif pct > 10 or dead_tuples > 50000:
             table["risk_level"] = "Warning"
+            if pct > 10: reasons.append("Moderate bloat (>10%)")
+            if dead_tuples > 50000: reasons.append("Significant dead tuples (>50k)")
         else:
             table["risk_level"] = "Low"
+            reasons.append("Table appears healthy")
 
+        table["risk_reasoning"] = "; ".join(reasons) if reasons else "Low impact"
+
+    # Update summary based on calculated impact
+    high_impact_dead_tables = len([t for t in tables_requiring_vacuum if t.get("risk_level") in ("High", "Critical")])
+    if vacuum_summary:
+        vacuum_summary[0]["tables_with_high_dead_tuples"] = high_impact_dead_tables
     return {
 
         "summary":

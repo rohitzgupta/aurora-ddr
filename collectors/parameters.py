@@ -76,13 +76,13 @@ def _collect(conn):
 
         name = row["name"]
         
-        raw = str(row["raw_setting"]).strip()
-        unit = str(row["unit"]).strip() if row["unit"] and str(row["unit"]).lower() != "none" else ""
+        raw = str(row.get("raw_setting", "")).strip()
+        unit = str(row.get("unit", "")).strip() if row.get("unit") and str(row.get("unit")).lower() != "none" else ""
         
-        # Prevent duplication: if the unit is already present in the raw string, don't append it again.
-        # Examples: "8192 8kB" (unit is 8kB) -> "8192 8kB"
-        # "300 s" (unit is s) -> "300 s"
-        if not unit or unit.lower() in raw.lower() or raw.lower().endswith(unit.lower()):
+        # Ensure we don't display "None" or duplicate units
+        if not unit or unit.lower() == "none":
+            row["setting"] = raw
+        elif unit.lower() in raw.lower() or raw.lower().endswith(unit.lower()):
             row["setting"] = raw
         else:
             row["setting"] = f"{raw} {unit}"

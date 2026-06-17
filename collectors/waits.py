@@ -165,7 +165,7 @@ def collect(conn):
 
             application_name,
 
-            client_addr,
+            COALESCE(client_addr::text, 'N/A') AS client_addr,
 
             state,
 

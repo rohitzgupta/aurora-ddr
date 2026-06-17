@@ -10,12 +10,12 @@ def _collect(conn):
     SELECT
 
         blocked.pid AS blocked_pid,
-        blocked.usename AS blocked_user,
-        blocked.application_name AS blocked_application,
+        COALESCE(blocked.usename, 'N/A') AS blocked_user,
+        COALESCE(blocked.application_name, 'N/A') AS blocked_application,
 
         blocker.pid AS blocker_pid,
-        blocker.usename AS blocker_user,
-        blocker.application_name AS blocker_application,
+        COALESCE(blocker.usename, 'N/A') AS blocker_user,
+        COALESCE(blocker.application_name, 'N/A') AS blocker_application,
 
         clock_timestamp() - blocked.query_start AS wait_duration,
 
@@ -137,8 +137,8 @@ def _collect(conn):
         SELECT
 
             pid,
-            usename,
-            application_name,
+            COALESCE(usename, 'N/A') AS usename,
+            COALESCE(application_name, 'N/A') AS application_name,
 
             state,
 

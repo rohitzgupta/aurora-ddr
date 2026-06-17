@@ -72,7 +72,7 @@ def _collect(conn):
     activity = execute_query(conn, activity_sql)
 
     return {
-        "database": info[0] if info else {},
+        "database": info[0] if info else {"database_name": "N/A", "current_user": "N/A", "version": "N/A", "timezone": "N/A"},
         "extensions": extensions,
         "settings": settings,
         "settings_dict": settings_dict,

@@ -63,9 +63,9 @@ def _collect(conn):
     active_sessions_sql = """
     SELECT
         pid,
-        usename,
-        application_name,
-        client_addr,
+        COALESCE(usename, 'N/A') AS usename,
+        COALESCE(application_name, 'N/A') AS application_name,
+        COALESCE(client_addr::text, 'N/A') AS client_addr,
 
         state,
 
@@ -88,8 +88,8 @@ def _collect(conn):
     long_running_txn_sql = """
     SELECT
         pid,
-        usename,
-        application_name,
+        COALESCE(usename, 'N/A') AS usename,
+        COALESCE(application_name, 'N/A') AS application_name,
 
         state,
 

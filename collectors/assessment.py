@@ -201,8 +201,8 @@ def collect(
         )
 
         # Connection Utilization Calculation
-        max_conns = int(db_info.get("settings_dict", {}).get("max_connections") or 0)
-        total_sessions = session_summary.get("total_sessions") or 0
+        max_conns = int(db_info.get("settings_dict", {}).get("max_connections") or 1)
+        total_sessions = int(session_summary.get("total_sessions") or 0)
         conn_util = round((total_sessions / max_conns * 100), 2) if max_conns > 0 else 0
         session_summary["utilization"] = conn_util
         session_summary["max_connections"] = max_conns

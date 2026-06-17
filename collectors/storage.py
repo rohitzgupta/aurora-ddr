@@ -109,17 +109,17 @@ def collect(conn):
 
             relname,
 
-            seq_scan,
+            COALESCE(seq_scan, 0) AS seq_scan,
 
-            seq_tup_read,
+            COALESCE(seq_tup_read, 0) AS seq_tup_read,
 
-            idx_scan,
+            COALESCE(idx_scan, 0) AS idx_scan,
 
-            idx_tup_fetch,
+            COALESCE(idx_tup_fetch, 0) AS idx_tup_fetch,
 
-            n_live_tup,
+            COALESCE(n_live_tup, 0) AS n_live_tup,
 
-            n_dead_tup
+            COALESCE(n_dead_tup, 0) AS n_dead_tup
 
         FROM pg_stat_user_tables
 
@@ -138,11 +138,11 @@ def collect(conn):
 
             indexrelname,
 
-            idx_scan,
+            COALESCE(idx_scan, 0) AS idx_scan,
 
-            idx_tup_read,
+            COALESCE(idx_tup_read, 0) AS idx_tup_read,
 
-            idx_tup_fetch
+            COALESCE(idx_tup_fetch, 0) AS idx_tup_fetch
 
         FROM pg_stat_user_indexes
 
