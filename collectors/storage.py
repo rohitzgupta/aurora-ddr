@@ -196,6 +196,15 @@ def collect(conn):
             storage_summary_sql
         )
 
+        # Separate User vs System objects
+        user_objects = []
+        system_objects = []
+        for obj in largest_objects:
+            if obj["schema_name"] in ("pg_catalog", "information_schema"):
+                system_objects.append(obj)
+            else:
+                user_objects.append(obj)
+
         return {
 
             "summary":
@@ -209,8 +218,11 @@ def collect(conn):
             "largest_indexes":
                 largest_indexes,
 
-            "largest_objects":
-                largest_objects,
+            "largest_objects": # Prioritize user objects in the main list
+                user_objects[:20],
+
+            "system_objects":
+                system_objects[:20],
 
             "table_activity":
                 table_activity,

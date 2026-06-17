@@ -65,6 +65,7 @@ def _collect(conn):
     extensions = execute_query(conn, extension_sql)
 
     settings = execute_query(conn, settings_sql)
+    settings_dict = {s['name']: s['setting'] for s in settings}
 
     database_size = execute_query(conn, database_size_sql)
 
@@ -74,6 +75,7 @@ def _collect(conn):
         "database": info[0] if info else {},
         "extensions": extensions,
         "settings": settings,
+        "settings_dict": settings_dict,
         "database_size": database_size[0]["database_size"]
             if database_size else "Unknown",
         "activity": activity[0]

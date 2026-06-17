@@ -30,6 +30,105 @@ def _recommendation(
     }
 
 
+def _generate_root_causes(score, deductions, wait_counts, session_summary, io_summary, freeze_summary, vacuum_summary):
+    """
+    Generates the Probable Root Cause Assessment based on weighted evidence.
+    """
+    causes = []
+    
+    # Connection Pressure
+    util = session_summary.get("utilization", 0)
+    if util > 70:
+        causes.append({
+            "contributor": "Connection Pressure",
+            "confidence": "High" if util > 90 else "Medium",
+            "evidence": f"{util}% of max_connections utilized ({session_summary.get('total_sessions')} sessions).",
+            "investigation": "Check application connection pool settings and scale or optimize session lifecycle."
+        })
+
+    # Lock Waits
+    lock_waiters = wait_counts.get("Lock", 0)
+    if lock_waiters > 0:
+        causes.append({
+            "contributor": "Lock Contention",
+            "confidence": "High" if lock_waiters > 5 else "Medium",
+            "evidence": f"{lock_waiters} session(s) blocked on heavy-weight locks.",
+            "investigation": "Review the Blocking Tree to identify the root blocker and the SQL holding locks."
+        })
+
+    # IO Waits
+    io_waiters = wait_counts.get("IO", 0)
+    if io_waiters > 0:
+        causes.append({
+            "contributor": "IO Saturation",
+            "confidence": "Medium",
+            "evidence": f"{io_waiters} session(s) waiting on storage reads/writes.",
+            "investigation": "Identify high-IO SQL queries and check Aurora storage latency metrics."
+        })
+
+    # LWLock Contention
+    lw_waiters = wait_counts.get("LWLock", 0)
+    if lw_waiters > 0:
+        causes.append({
+            "contributor": "LWLock Contention",
+            "confidence": "Medium",
+            "evidence": f"{lw_waiters} session(s) waiting on internal light-weight locks.",
+            "investigation": "Check for high concurrency on specific pages or WAL write pressure."
+        })
+
+    # Idle In Transaction
+    itx = session_summary.get("idle_in_transaction", 0)
+    if itx >= 5:
+        causes.append({
+            "contributor": "Idle In Transaction",
+            "confidence": "High",
+            "evidence": f"{itx} sessions holding transactions open without active work.",
+            "investigation": "Audit application code for missing commits/rollbacks and connection handling."
+        })
+
+    # Temp Spills
+    temp_bytes = io_summary.get("temp_bytes", 0)
+    if temp_bytes > 1024 * 1024 * 512: # > 512MB
+        causes.append({
+            "contributor": "Temporary File Spills",
+            "confidence": "High",
+            "evidence": io_summary.get("temp_bytes_pretty", "High temp usage"),
+            "investigation": "Review Top SQL for large sorts/joins and consider increasing work_mem."
+        })
+
+    # Vacuum Pressure
+    dead_tables = vacuum_summary.get("tables_with_high_dead_tuples", 0)
+    if dead_tables > 0:
+        causes.append({
+            "contributor": "Vacuum Pressure",
+            "confidence": "Medium",
+            "evidence": f"{dead_tables} table(s) with significant dead tuple buildup.",
+            "investigation": "Check autovacuum settings and identify if long-running transactions are blocking cleanup."
+        })
+
+    # TXID Freeze Risk
+    if freeze_summary.get("critical_tables", 0) > 0:
+        causes.append({
+            "contributor": "TXID Freeze Risk",
+            "confidence": "Critical",
+            "evidence": f"{freeze_summary.get('critical_tables')} tables approaching wraparound.",
+            "investigation": "Perform emergency manual VACUUM FREEZE on critical tables."
+        })
+
+    # Sort by confidence/severity and return top 3
+    sorted_causes = sorted(causes, key=lambda x: (x['confidence'] == 'Critical', x['confidence'] == 'High', x['confidence'] == 'Medium'), reverse=True)
+    
+    if not sorted_causes:
+        sorted_causes.append({
+            "contributor": "Healthy Workload",
+            "confidence": "N/A",
+            "evidence": "No significant performance bottlenecks detected in current stats.",
+            "investigation": "Continue monitoring or check historical CloudWatch metrics."
+        })
+
+    return sorted_causes[:3]
+
+
 def _score_status(score):
 
     if score >= 90:
@@ -89,6 +188,34 @@ def collect(
             "summary",
             {}
         )
+
+        # Connection Utilization Calculation
+        max_conns = int(db_info.get("settings_dict", {}).get("max_connections", 0))
+        total_sessions = session_summary.get("total_sessions", 0)
+        conn_util = round((total_sessions / max_conns * 100), 2) if max_conns > 0 else 0
+        session_summary["utilization"] = conn_util
+        session_summary["max_connections"] = max_conns
+        
+        if conn_util > 90:
+            score -= 20
+            deductions.append("-20: Critical connection utilization (>90%)")
+            session_summary["utilization_status"] = "High"
+            risks.append(_risk("CRITICAL", "Connection Saturation", f"{conn_util}% utilized", "Database may reject new connections.", "Increase max_connections or use a connection pooler.", "DBA"))
+        elif conn_util > 70:
+            score -= 10
+            deductions.append("-10: High connection utilization (>70%)")
+            session_summary["utilization_status"] = "Watch"
+            risks.append(_risk("WARNING", "High Connection Count", f"{conn_util}% utilized", "Approaching connection limits.", "Review connection pooling and idle session timeouts.", "DBA"))
+        else:
+            session_summary["utilization_status"] = "Healthy"
+
+        # Deductions based on data
+        io_summary = io.get("summary", {})
+        freeze_summary = freeze_age.get("summary", {})
+        vacuum_summary = vacuum.get("summary", {})
+        
+        # Logic for Why the score was assigned
+        score_explanation = f"The score of {score} is based on " + ( "detected performance bottlenecks and resource pressure." if score < 95 else "the database operating within healthy parameters.")
 
         blocked_sessions = lock_summary.get(
             "blocked_sessions",
@@ -405,6 +532,17 @@ def collect(
                 "DBA"
             ))
 
+        # Probable Root Cause Assessment
+        root_causes = _generate_root_causes(
+            score, 
+            deductions, 
+            wait_counts, 
+            session_summary, 
+            io_summary, 
+            freeze_summary, 
+            vacuum_summary
+        )
+
         score = max(
             0,
             min(
@@ -421,6 +559,8 @@ def collect(
             "score": score,
             "status": status,
             "status_class": status_class,
+            "score_explanation": score_explanation,
+            "root_causes": root_causes,
             "deductions": deductions,
             "background_processes": waits.get("background_summary", []),
             "active_ratio": active_ratio,
@@ -446,6 +586,8 @@ def collect(
             "score": 0,
             "status": "Assessment Incomplete",
             "status_class": "status-critical",
+            "score_explanation": "Assessment failed to complete.",
+            "root_causes": [],
             "deductions": [],
             "background_processes": [],
             "active_ratio": 0,

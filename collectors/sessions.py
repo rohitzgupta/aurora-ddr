@@ -142,7 +142,7 @@ def _collect(conn):
 
     return {
         "summary":
-            summary[0] if summary else {},
+            summary[0] if summary else {"total_sessions": 0, "active_sessions": 0, "idle_sessions": 0, "idle_in_transaction": 0},
 
         "state_breakdown":
             states,

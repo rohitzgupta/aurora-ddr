@@ -68,15 +68,9 @@ def _collect(conn):
         n_dead_tup,
 
         ROUND(
-            CASE
-                WHEN n_live_tup = 0
-                THEN 0
-                ELSE
-                    (
-                        n_dead_tup::numeric /
-                        n_live_tup
-                    ) * 100
-            END,
+            LEAST(100.0,
+                (n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0)) * 100
+            ),
             2
         ) AS dead_tuple_pct,
 
@@ -187,6 +181,19 @@ def _collect(conn):
         conn,
         vacuum_summary_sql
     )
+
+        # Add severity to vacuum tables
+        for table in tables_requiring_vacuum:
+            pct = table.get("dead_tuple_pct", 0) or 0
+            if pct > 20:
+                table["severity"] = "Red"
+                table["status_class"] = "status-critical"
+            elif pct > 10:
+                table["severity"] = "Yellow"
+                table["status_class"] = "status-watch"
+            else:
+                table["severity"] = "Green"
+                table["status_class"] = "status-healthy"
 
     return {
 

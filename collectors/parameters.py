@@ -11,7 +11,7 @@ def _collect(conn):
 
         name,
 
-        setting,
+        setting AS raw_setting,
 
         unit,
 
@@ -75,6 +75,11 @@ def _collect(conn):
     for row in parameters:
 
         name = row["name"]
+        # Cleanup display: if unit is None, don't show it
+        if row["unit"]:
+            row["setting"] = f"{row['raw_setting']} {row['unit']}"
+        else:
+            row["setting"] = row["raw_setting"]
 
         if name in (
             "max_connections",

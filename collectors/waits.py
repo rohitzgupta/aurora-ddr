@@ -27,8 +27,8 @@ def _empty_result(error=None):
                 "total_sessions_observed": 0,
                 "waiting_sessions": 0,
                 "active_waiting_sessions": 0,
-                "top_wait_event_type": None,
-                "top_wait_event": None,
+                "top_wait_event_type": "N/A",
+                "top_wait_event": "N/A",
                 "top_wait_session_count": 0
             },
 

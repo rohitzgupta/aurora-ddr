@@ -9,7 +9,7 @@ def _empty_result(error=None):
         errors.append(error)
 
     return {
-        "summary": {},
+        "summary": {"blks_read": 0, "blks_hit": 0, "cache_hit_pct": 0, "temp_files": 0, "temp_bytes": 0, "temp_bytes_pretty": "0 B", "deadlocks": 0},
         "table_io": [],
         "index_io": [],
         "temp_sql": [],

@@ -36,16 +36,7 @@ def _collect(conn):
 
     # Exclusion filters for DDR and Metadata queries
     sql_exclusion_clause = """
-    AND query NOT LIKE '%Aurora DDR%'
-    AND query NOT LIKE '%pg_stat_%'
-    AND query NOT LIKE '%pg_settings%'
-    AND query NOT LIKE '%pg_catalog%'
-    AND query NOT LIKE '%information_schema%'
-    AND query NOT LIKE '%current_database()%'
-    AND query NOT LIKE '%current_user%'
-    AND query NOT LIKE '%pg_size_pretty%'
-    AND query NOT LIKE '%pg_relation_size%'
-    AND query NOT LIKE '%pg_total_relation_size%'
+    AND query NOT SIMILAR TO '%(Aurora DDR|pg_stat_|pg_settings|pg_locks|pg_stat_activity|pg_stat_database|pg_stat_statements|pg_class|pg_namespace|pg_database|pg_extension|information_schema|pg_catalog|current_database|current_user|pg_size_pretty|pg_relation_size|pg_total_relation_size)%'
     """
 
     top_total_time_sql = f"""
