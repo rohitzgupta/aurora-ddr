@@ -130,111 +130,60 @@ def main():
 
     try:
 
-        print(
-            "Collecting database information..."
+        def run_safe(name, collector_mod, *args):
+            print(f"Collecting {name}...")
+            try:
+                data = collector_mod.collect(*args)
+                # Ensure transaction is clean for next collector
+                conn.rollback()
+                return data
+            except Exception as e:
+                print(f"  Error in {name}: {e}")
+                try:
+                    conn.rollback()
+                except:
+                    pass
+                return {
+                    "errors": [str(e)],
+                    "enabled": False,
+                    "summary": {},
+                    "details": []
+                }
+
+        db_info_data = run_safe("database info", db_info, conn)
+        sessions_data = run_safe("sessions", sessions, conn)
+        locks_data = run_safe("locks", locks, conn)
+        waits_data = run_safe("waits", waits, conn)
+        blocking_tree_data = run_safe("blocking tree", blocking_tree, conn)
+        vacuum_data = run_safe("vacuum", vacuum, conn)
+        freeze_age_data = run_safe("freeze age", freeze_age, conn)
+        sqls_data = run_safe("SQL statistics", sqls, conn)
+        storage_data = run_safe("storage", storage, conn)
+        io_data = run_safe("IO pressure", io, conn)
+        parameters_data = run_safe("parameters", parameters, conn)
+
+        print("Generating findings...")
+        findings_data = findings.collect(
+            db_info_data,
+            sessions_data,
+            locks_data,
+            sqls_data,
+            waits_data,
+            freeze_age_data
         )
 
-        db_info_data = (
-            db_info.collect(conn)
-        )
-
-        print(
-            "Collecting session information..."
-        )
-
-        sessions_data = (
-            sessions.collect(conn)
-        )
-
-        print(
-            "Collecting lock information..."
-        )
-
-        locks_data = (
-            locks.collect(conn)
-        )
-
-        print(
-            "Collecting wait analysis..."
-        )
-
-        waits_data = (
-            waits.collect(conn)
-        )
-
-        print(
-            "Collecting blocking tree..."
-        )
-
-        blocking_tree_data = (
-            blocking_tree.collect(conn)
-        )
-
-        print(
-            "Collecting vacuum analysis..."
-        )
-
-        vacuum_data = (
-            vacuum.collect(conn)
-        )
-
-        print(
-            "Collecting freeze age analysis..."
-        )
-
-        freeze_age_data = (
-            freeze_age.collect(conn)
-        )
-
-        print(
-            "Collecting SQL statistics..."
-        )
-
-        sqls_data = (
-            sqls.collect(conn)
-        )
-
-        print(
-            "Collecting storage analysis..."
-        )
-
-        storage_data = (
-            storage.collect(conn)
-        )
-
-        print(
-            "Collecting IO pressure analysis..."
-        )
-
-        io_data = (
-            io.collect(conn)
-        )
-
-        print(
-             "Collecting parameter analysis..."
-        )
-
-        parameters_data = (
-            parameters.collect(conn)
-        )
-
-        print(
-            "Generating findings..."
-        )
-
-        findings_data = (
-            findings.collect(
-                db_info_data,
-                sessions_data,
-                locks_data,
-                sqls_data,
-                waits_data,
-                freeze_age_data
-            )
-        )
-
-        print(
-            "Generating health assessment..."
+        print("Generating health assessment...")
+        assessment_data = assessment.collect(
+            db_info_data,
+            sessions_data,
+            locks_data,
+            sqls_data,
+            waits_data,
+            blocking_tree_data,
+            vacuum_data,
+            freeze_age_data,
+            storage_data,
+            io_data
         )
 
         assessment_data = (

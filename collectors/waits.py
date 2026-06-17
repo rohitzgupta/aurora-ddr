@@ -173,11 +173,9 @@ def collect(conn):
 
             wait_event,
 
-            GREATEST(interval '0', 
-                     now() - query_start) AS duration,
+            clock_timestamp() - query_start AS duration,
 
-            GREATEST(interval '0', 
-                     now() - xact_start) AS transaction_duration,
+            clock_timestamp() - xact_start AS transaction_duration,
 
             LEFT(query,1000) AS query
 

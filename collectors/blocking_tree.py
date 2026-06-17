@@ -17,8 +17,7 @@ def _collect(conn):
 
         state,
 
-        GREATEST(interval '0', 
-                 now() - xact_start) AS transaction_duration,
+        clock_timestamp() - xact_start AS transaction_duration,
 
         pg_blocking_pids(pid)
             AS blocking_pids,

@@ -48,7 +48,7 @@ def _collect(conn):
     AND query NOT LIKE '%pg_total_relation_size%'
     """
 
-    top_total_time_sql = """
+    top_total_time_sql = f"""
     SELECT
 
         calls,
@@ -84,7 +84,7 @@ def _collect(conn):
     LIMIT 20
     """
 
-    top_avg_time_sql = """
+    top_avg_time_sql = f"""
     SELECT
 
         calls,
@@ -102,13 +102,14 @@ def _collect(conn):
     FROM pg_stat_statements
 
     WHERE calls >= 5
+    {sql_exclusion_clause}
 
     ORDER BY mean_exec_time DESC
 
     LIMIT 20
     """
 
-    top_calls_sql = """
+    top_calls_sql = f"""
     SELECT
 
         calls,
@@ -124,13 +125,16 @@ def _collect(conn):
         LEFT(query,1000) AS query
 
     FROM pg_stat_statements
+
+    WHERE 1=1
+    {sql_exclusion_clause}
 
     ORDER BY calls DESC
 
     LIMIT 20
     """
 
-    top_rows_sql = """
+    top_rows_sql = f"""
     SELECT
 
         calls,
@@ -146,6 +150,9 @@ def _collect(conn):
         LEFT(query,1000) AS query
 
     FROM pg_stat_statements
+
+    WHERE 1=1
+    {sql_exclusion_clause}
 
     ORDER BY rows DESC
 
